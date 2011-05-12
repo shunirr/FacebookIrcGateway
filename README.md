@@ -8,7 +8,10 @@ Facebook のアプリを申請しましょう。
 
 アプリ ID と秘訣を使って、 CODE を取得しましょう。
 
-- http://developers.facebook.com/docs/authentication/
+    ./oauth.rb
+
+でてきた URL にブラウザでアクセスして、アプリを許可します。
+Success と表示されたページの URI 末尾のなんかあれをこうします。
 
 ## ひつようなもの
 - Ruby
