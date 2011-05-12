@@ -10,6 +10,13 @@ Facebook のアプリを申請しましょう。
 
 - http://developers.facebook.com/docs/authentication/
 
+## ひつようなもの
+- Ruby
+- rubygems
+- net/irc
+- oauth
+- facebook_oauth
+
 ## つかいかた
 config.yaml を設定する
 
