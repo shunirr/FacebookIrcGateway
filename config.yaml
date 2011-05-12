@@ -1,0 +1,9 @@
+app:
+  id: __YOUR_APP_ID__
+  secret: __YOUR_APP_SECRET__
+  callback: 'http://www.facebook.com/connect/login_success.html'
+
+client:
+  code: __YOUR_ACCESS_CODE__
+
+
