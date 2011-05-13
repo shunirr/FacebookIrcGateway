@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 # vim:encoding=UTF-8:
 
-OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
-
 $LOAD_PATH << 'lib'
 $LOAD_PATH << '../lib'
 
@@ -16,7 +14,10 @@ require 'uri'
 require 'oauth'
 require 'facebook_oauth'
 require 'pit'
+require 'openssl'
 require 'open-uri'
+
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 CONFIG = Pit.get("facebok_irc_gateway", :require => {
       'id' => 'Application ID',
