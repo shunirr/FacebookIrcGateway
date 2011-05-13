@@ -16,6 +16,7 @@ require 'uri'
 require 'oauth'
 require 'facebook_oauth'
 require 'pit'
+require 'openssl'
 require 'open-uri'
 
 CONFIG = Pit.get("facebok_irc_gateway", :require => {
