@@ -73,7 +73,7 @@ Bundler でセットアップします
 
 最後にセットアップスクリプトを実行します
 
-    bundle exec ruby oauth.rb
+    bundle exec ruby setup.rb
 
 以上で設定が生成され書き込まれます。なお API Secret は日本語表示では API の秘訣と表示されます。
 
