@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # vim:encoding=UTF-8:
 
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+
 $LOAD_PATH << 'lib'
 $LOAD_PATH << '../lib'
 
