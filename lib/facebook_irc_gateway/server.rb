@@ -117,9 +117,16 @@ module FacebookIrcGateway
   
     def on_privmsg(m)
       super
+      message = m[1]
       begin
-        ret = @client.me.feed(:create, :message => m[1])
-        post server_name, NOTICE, main_channel, "#{m[1]} (#{ret.to_s})"
+        id = @client.me.feed(:create, :message => message)['id']
+        post server_name, NOTICE, main_channel, "#{message} (#{id})"
+        begin
+          db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
+          db[id] = '1'
+        ensure
+          db.close
+        end
       rescue Exception => e
         post server_name, NOTICE, main_channel, 'Fail Update...'
         @log.error "#{__FILE__}: #{__LINE__}L"
