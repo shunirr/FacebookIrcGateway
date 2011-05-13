@@ -1,5 +1,6 @@
 
 require 'net/https'
+require 'json'
 Net::HTTP.version_1_2
 
 module FacebookIrcGateway

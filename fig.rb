@@ -11,10 +11,10 @@ require 'optparse'
 require 'facebook_irc_gateway'
 
 CONFIG = Pit.get("facebok_irc_gateway", :require => {
-      'id' => 'Application ID',
-      'secret' => 'Application Secret',
-      'callback' => 'Callback URL',
-      'code' => 'Your Authorization Code'
+  'id'       => 'Application ID',
+  'secret'   => 'Application Secret',
+  'callback' => 'Callback URL',
+  'code'     => 'Your Authorization Code'
 })
 
 opts = {
@@ -51,7 +51,6 @@ end
 
 opts[:logger] = Logger.new($stdout, 'daily')
 opts[:logger].level = Logger::DEBUG
-opts[:pit] = @pit
 
 Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start
 

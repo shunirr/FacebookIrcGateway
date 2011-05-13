@@ -1,18 +1,12 @@
-
-begin
-  require 'net/irc'
-  require 'sdbm'
-  require 'tmpdir'
-  require 'uri'
-  require 'oauth'
-  require 'facebook_oauth'
-  require 'pit'
-  require 'openssl'
-  require 'open-uri'
-  require 'json'
-rescue Exception
-  retry if require 'rubygems'
-end
+require 'rubygems'
+require 'net/irc'
+require 'sdbm'
+require 'tmpdir'
+require 'uri'
+require 'oauth'
+require 'facebook_oauth'
+require 'openssl'
+require 'open-uri'
 
 require 'facebook_irc_gateway/utils'
 
@@ -35,19 +29,14 @@ module FacebookIrcGateway
     def initialize(*args)
       super
       
-      # read config file
-      config = {
-        'app' => {'id' => CONFIG['id'], 'secret' => CONFIG['secret'], 'callback' => CONFIG['callback']}, 
-        'client' => {'code' => CONFIG['code']}
-      }
-  
       begin
         agent = FacebookOAuth::Client.new(
-          :application_id     => config['app']['id'],
-          :application_secret => config['app']['secret'],
-          :callback           => config['app']['callback']
+          :application_id     => CONFIG['id'],
+          :application_secret => CONFIG['secret'],
+          :callback           => CONFIG['callback']
         )
       rescue Exception => e
+        @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
         e.backtrace.each do |l|
           @log.error "\t#{l}"
@@ -55,7 +44,7 @@ module FacebookIrcGateway
       end
   
       # got oauth client code?
-      @setup = config['client']['code'].nil?
+      @setup = CONFIG['code'].nil?
   
       if @setup then
         @client = agent
@@ -63,15 +52,16 @@ module FacebookIrcGateway
       end
   
       begin
-        @access_token = agent.authorize(:code => config['client']['code'])
+        @access_token = agent.authorize(:code => CONFIG['code'])
         @client = FacebookOAuth::Client.new(
-          :application_id     => config['app']['id'],
-          :application_secret => config['app']['secret'],
+          :application_id     => CONFIG['id'],
+          :application_secret => CONFIG['secret'],
           :token              => @access_token.token
         )
   
         @myid = @client.me.feed['data'][0]['from']['id'].to_i
       rescue Exception => e
+        @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
         e.backtrace.each do |l|
           @log.error "\t#{l}"
@@ -92,17 +82,16 @@ module FacebookIrcGateway
   
       @timeline = []
       @check_friends_thread = Thread.start do
-  #      loop do
-          begin
-            check_friends
-          rescue Exception => e
-            @log.error e.inspect
-            e.backtrace.each do |l|
-              @log.error "\t#{l}"
-            end
+        # TODO: loop
+        begin
+          check_friends
+        rescue Exception => e
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
           end
-  #        sleep freq(@ratio[:friends] / @footing)
-  #      end
+        end
       end
   
       @check_news_thread = Thread.start do
@@ -111,6 +100,7 @@ module FacebookIrcGateway
           begin
             check_news
           rescue Exception => e
+            @log.error "#{__FILE__}: #{__LINE__}L"
             @log.error e.inspect
             e.backtrace.each do |l|
               @log.error "\t#{l}"
@@ -132,6 +122,7 @@ module FacebookIrcGateway
         post server_name, NOTICE, main_channel, "#{m[1]} (#{ret.to_s})"
       rescue Exception => e
         post server_name, NOTICE, main_channel, 'Fail Update...'
+        @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
         e.backtrace.each do |l|
           @log.error "\t#{l}"
@@ -243,6 +234,7 @@ module FacebookIrcGateway
   
         end
       rescue Exception => e
+        @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
       ensure
         db.close rescue nil
