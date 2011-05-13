@@ -13,8 +13,15 @@ require 'tmpdir'
 require 'uri'
 require 'oauth'
 require 'facebook_oauth'
-require 'yaml'
+require 'pit'
 require 'open-uri'
+
+CONFIG = Pit.get("facebok_irc_gateway", :require => {
+      'id' => 'Application ID',
+      'secret' => 'Application Secret',
+      'callback' => 'Callback URL',
+      'code' => 'Your Authorization Code'
+})
 
 class FacebookIrcGateway < Net::IRC::Server::Session
   def server_name
@@ -33,12 +40,7 @@ class FacebookIrcGateway < Net::IRC::Server::Session
     super
     
     # read config file
-    if File.exist? @opts.config then
-      config = YAML::load open(@opts.config).read
-    else
-      @log.error "Cant read #{@opts.config}"
-      exit 0
-    end
+    config = {'app' => {'id' => CONFIG['id'], 'secret' => CONFIG['secret'], 'callback' => CONFIG['callback']}, 'client' => {'code' => CONFIG['code']}}
 
     begin
       agent = FacebookOAuth::Client.new(
@@ -292,6 +294,7 @@ if __FILE__ == $0
 
   opts[:logger] = Logger.new($stdout, 'daily')
   opts[:logger].level = Logger::DEBUG
+  opts[:pit] = @pit
 
   Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway, opts).start
 end
