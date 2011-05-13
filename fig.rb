@@ -8,6 +8,7 @@ $KCODE = 'u' unless defined? ::Encoding
 
 require 'rubygems'
 require 'net/irc'
+require 'net/https'
 require 'sdbm'
 require 'tmpdir'
 require 'uri'
@@ -16,8 +17,10 @@ require 'facebook_oauth'
 require 'pit'
 require 'openssl'
 require 'open-uri'
+require 'json'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+Net::HTTP.version_1_2
 
 CONFIG = Pit.get("facebok_irc_gateway", :require => {
       'id' => 'Application ID',
@@ -226,7 +229,7 @@ class FacebookIrcGateway < Net::IRC::Server::Session
             mes += "#{description} "
           end
 
-          mes += " #{link} " if link
+          mes += " #{shorten_url(link)} " if link
 
           if app_name
             mes += "(#{app_name}) "
@@ -253,6 +256,28 @@ class FacebookIrcGateway < Net::IRC::Server::Session
       db.close rescue nil
     end
   end
+
+  def shorten_url(url)
+    # already shoten
+    return url if url.size < 20
+
+    api = URI.parse 'https://www.googleapis.com/urlshortener/v1/url'
+
+    https = Net::HTTP.new(api.host, api.port)
+    https.use_ssl = true
+    https.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    https.start {|http|
+      header = {"Content-Type" => "application/json"}
+      body   = {'longUrl' => url}.to_json
+      response = http.post(api.path, body, header)
+      json = JSON.parse(response.body)
+      short = json['id']
+
+      return short if short and short.size > 14
+    }
+
+    return url
+  end
 end
 
 if __FILE__ == $0
@@ -262,7 +287,6 @@ if __FILE__ == $0
     :port => 16822,
     :host => 'localhost',
     :log  => nil,
-    :config => 'config.yaml',
   }
 
   OptionParser.new do |parser|
@@ -285,10 +309,6 @@ if __FILE__ == $0
 
       on('-l', '--log LOG', 'log file') do |log|
         opts[:log] = log
-      end
-
-      on('-c', "--config [CONF=#{opts[:config]}", 'config file') do |config|
-        opts[:config] = config
       end
 
       parse!(ARGV)
