@@ -23,11 +23,7 @@ and need to setup Bundler
 
     bundle install
 
-Second, You need to setup Facebook Application.
-
-- http://www.facebook.com/developers/
-
-Third, run setup script.
+Second, run setup script.
 
     bundle exec ruby oauth.rb
 
@@ -76,10 +72,6 @@ IRC サーバーのふりをする Facebook クライアントです
 Bundler でセットアップします
 
     bundle install
-
-Facebook のアプリケーションを登録します
-
-- http://www.facebook.com/developers
 
 最後にセットアップスクリプトを実行します
 
