@@ -1,5 +1,11 @@
 # Facebook Irc Gateway
-おなかすいた
+
+## なにができるの？
+Facebook を IRC 経由でアレしたりコレしたり出来ます。
+
+- news feed (Friend timeline) の取得・表示
+- news feed 上のコメントの取得・表示
+- feed のアップデート
 
 ## つかうまえに
 Facebook のアプリを申請しましょう。
@@ -29,8 +35,7 @@ config.yaml を設定する
 
 IRC クライアントで繋ぐ。 (デフォルトだと 16822 あたりのポートを Listen する)
 
-## ToDo
+## 今後のやる気次第
 - Like 対応
-- Comment 対応
 - TypableMap 的なもので Like したりコメントする
 

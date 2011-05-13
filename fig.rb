@@ -14,6 +14,7 @@ require 'uri'
 require 'oauth'
 require 'facebook_oauth'
 require 'yaml'
+require 'open-uri'
 
 class FacebookIrcGateway < Net::IRC::Server::Session
   def server_name
@@ -61,11 +62,11 @@ class FacebookIrcGateway < Net::IRC::Server::Session
     end
 
     begin
-      access_token = agent.authorize(:code => config['client']['code'])
+      @access_token = agent.authorize(:code => config['client']['code'])
       @client = FacebookOAuth::Client.new(
         :application_id     => config['app']['id'],
         :application_secret => config['app']['secret'],
-        :token              => access_token.token
+        :token              => @access_token.token
       )
 
       @myid = @client.me.feed['data'][0]['from']['id'].to_i
@@ -104,18 +105,18 @@ class FacebookIrcGateway < Net::IRC::Server::Session
 #      end
     end
 
-    @check_timeline_thread = Thread.start do
+    @check_news_thread = Thread.start do
       sleep 3
       loop do
         begin
-          check_timeline
+          check_news
         rescue Exception => e
           @log.error e.inspect
           e.backtrace.each do |l|
             @log.error "\t#{l}"
           end
         end
-        sleep @config['client']['wait'].to_i || 60
+        sleep 20
       end
     end
   end
@@ -170,7 +171,7 @@ class FacebookIrcGateway < Net::IRC::Server::Session
       post server_name, RPL_ENDOFNAMES, @nick, main_channel, 'End of NAMES list'
     else
       prv_friends = @friends.map {|i| i['name'] }
-      now_friends = friends.map {|i| i['name'] }
+      now_friends =  friends.map {|i| i['name'] }
 
       (now_friends - prv_friends).each do |join|
         join = "@#{join}"
@@ -185,23 +186,11 @@ class FacebookIrcGateway < Net::IRC::Server::Session
     end
   end
 
-  def check_timeline
+  def check_news
     begin
-      db = SDBM.open("#{Dir.tmpdir}/#{@real}.db", 0666)
+      db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
       @client.me.home['data'].reverse.each do |d|
-        id = d['id']
-        # 重複チェック
-        if db.include?(id)
-          next
-        else
-          db[id] = '1'
-        end
-
-        # 自分の発言の場合
-        if @myid == d['from']['id'].to_i
-          next
-        end
-
+        id          = d['id']
         message     = d['message']
         app_name    = d['application']['name'] if d['application']
         name        = d['from']['name'].gsub(/\s+/, '')
@@ -209,42 +198,49 @@ class FacebookIrcGateway < Net::IRC::Server::Session
         caption     = d['caption']
         description = d['description']
         comments    = d['comments']['data'] if d['comments']
+        #likes       = d['likes']['data'] if d['likes']
 
-        next unless name
-  
-        if message
+        message = '' unless message
+        name = server_name unless name
+
+        unless db.include?(id)
+          db[id] = '1'
+
           mes = "#{message} "
-        else
-          mes = ''
-        end
-
-        if caption
-          if mes != ''
-            mes += '/ '
+          if caption
+            if mes != ''
+              mes += '/ '
+            end
+            mes += "#{caption} "
           end
-          mes += "#{caption} "
-        end
 
-        if description
-          if mes != ''
-            mes += '/ '
+          if description
+            if mes != ''
+              mes += '/ '
+            end
+            mes += "#{description} "
           end
-          mes += "#{description} "
+
+          mes += " #{link} " if link
+
+          if app_name
+            mes += "(#{app_name}) "
+          else
+            mes += '(web) '
+          end
+
+          post name, PRIVMSG, main_channel, mes
         end
-
-        mes += " #{link} " if link
-
-        if app_name
-          mes += "(#{app_name}) "
-        else
-          mes += '(web) '
-        end
-
-        post name, PRIVMSG, main_channel, mes
 
         comments.each do |comment|
-          post name, PRIVMSG, main_channel, "(#{comment['from']['name'].gsub(/\s+/, '')}) >> #{comment['message']}"
+          cid   = comment['id']
+          cname = comment['from']['name'].gsub(/\s+/, '')
+          unless db.include?(cid)
+            db[cid] = '1'
+            post cname, PRIVMSG, main_channel, "#{comment['message']} >> #{name}: #{message}"
+          end
         end if comments
+
       end
     rescue Exception => e
       @log.error e.inspect
