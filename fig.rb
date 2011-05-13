@@ -109,7 +109,7 @@ class FacebookIrcGateway < Net::IRC::Server::Session
 
     @check_news_thread = Thread.start do
       sleep 3
-      loop do
+      while true
         begin
           check_news
         rescue Exception => e
