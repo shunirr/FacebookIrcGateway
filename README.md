@@ -23,22 +23,16 @@ and need to setup Bundler
 
     bundle install
 
-Second, You need to setup Facebook Application.
+Second, run setup script.
 
-- http://www.facebook.com/developers/
+    bundle exec ruby setup.rb
 
-Third, run setup script.
-
-    bundle exec ruby oauth.rb
-
-This Script generate config for Pit.
+This Script generate config.
 
 ## Using
 Run
 
     bundle exec ruby fig.rb
-
-and when editor appers, paste config that generated before.
 
 Have A FUN!!
 
@@ -77,22 +71,16 @@ Bundler でセットアップします
 
     bundle install
 
-Facebook のアプリケーションを登録します
-
-- http://www.facebook.com/developers
-
 最後にセットアップスクリプトを実行します
 
     bundle exec ruby oauth.rb
 
-Pit に貼り付ける為の設定ファイルが生成されます。なお API Secret は日本語表示では API の秘訣と表示されます。
+以上で設定が生成され書き込まれます。なお API Secret は日本語表示では API の秘訣と表示されます。
 
 ## 実行
 ここまでくれば実行するだけです
 
     bundle exec ruby fig.rb
-
-エディタが表示されるので、先程生成した設定を貼り付けましょう。
 
 Have A FUN!!
 

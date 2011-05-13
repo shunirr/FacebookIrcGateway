@@ -2,13 +2,14 @@
 require 'rubygems'
 require 'oauth'
 require 'facebook_oauth'
+require 'pit'
 
 DEFAULT_APP_ID = '221646024527845'
 DEFAULT_APP_SECRET = '012749b22fcc3111ea88760c209cdb27'
 
 config = {'app' => {}}
 
-print "Input your Application ID: (Press enter, if use default Application ID)"
+print "Input your Application ID: (Press enter, if use default Application ID): "
 app_id = gets.chomp
 if app_id == ''
   config['app']['id']     = DEFAULT_APP_ID
@@ -33,14 +34,14 @@ client = FacebookOAuth::Client.new(
 puts "---"
 puts client.authorize_url(:scope => 'offline_access, publish_stream, user_status, read_stream')
 puts "---"
-print "Please access this URL, and Paste new URL: "
+print "Please access this URL, and Allow this Application, and Paste new URL: "
 code = gets.chomp.split("code=").last
 
-puts "Paste this to your Pit"
-puts <<EOS
----
-id: #{config['app']['id']}
-secret: #{config['app']['secret']}
-callback: #{config['app']['callback']}
-code: #{code}
-EOS
+Pit.set("facebok_irc_gateway", :data => {
+  'id' => config['app']['id'],
+  'secret' => config['app']['secret'],
+  'callback' => config['app']['callback'],
+  'code' => code
+})
+
+puts "Complete Setup!!"
