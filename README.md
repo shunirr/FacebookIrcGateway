@@ -14,7 +14,7 @@ First of All, need to setup environments.
 
 This Application require
 
-- Ruby 1.9.2 or higher
+- Ruby 1.8.7 or higher(Testing on 1.9.2 and 1.8.7)
 - Bundler gem
 
 and need to setup Bundler
