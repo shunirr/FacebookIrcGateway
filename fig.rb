@@ -133,7 +133,7 @@ class FacebookIrcGateway < Net::IRC::Server::Session
       ret = @client.me.feed(:create, :message => m[1])
       post server_name, NOTICE, main_channel, "#{m[1]} (#{ret.to_s})"
     rescue Exception => e
-      post server_name, NOTICE, main_channel, '投稿に失敗しました'
+      post server_name, NOTICE, main_channel, 'Fail Update...'
       @log.error e.inspect
       e.backtrace.each do |l|
         @log.error "\t#{l}"

@@ -1,41 +1,53 @@
 # Facebook Irc Gateway
 
-## なにができるの？
-Facebook を IRC 経由でアレしたりコレしたり出来ます。
+## What's That
+Facebook Client that spoof IRC server.
 
-- news feed (Friend timeline) の取得・表示
-- news feed 上のコメントの取得・表示
-- feed のアップデート
+You can be as follows:
 
-## つかうまえに
-Facebook のアプリを申請しましょう。
+- Reading news feed.
+- Reading comments on news feed.
+- Update your status.
+
+## Before Using
+First of All, need to setup environments.
+
+This Application require
+
+- Ruby 1.9.2 or higher
+- Bundler gem
+
+and need to setup Bundler
+
+    bundle install
+
+Second, You need to setup Facebook Application.
 
 - http://www.facebook.com/developers/
 
-アプリ ID と秘訣を使って、 CODE を取得しましょう。
+Third, run setup script.
 
-    ./oauth.rb
+    bundle exec ruby oauth.rb
 
-でてきた URL にブラウザでアクセスして、アプリを許可します。
-Success と表示されたページの URI 末尾のなんかあれをこうします。
+This Script generate config for Pit.
 
-## ひつようなもの
-- Ruby
-- rubygems
-- net/irc
-- oauth
-- facebook_oauth
+## Using
+Run
 
-## つかいかた
-config.yaml を設定する
+    bundle exec ruby fig.rb
 
-起動する
+and when editor appers, paste config that generated before.
 
-    ./fig.rb
+Have A fun!
 
-IRC クライアントで繋ぐ。 (デフォルトだと 16822 あたりのポートを Listen する)
+## Todo
+- Support Like
+- Support TypableMap
 
-## 今後のやる気次第
-- Like 対応
-- TypableMap 的なもので Like したりコメントする
+## Credits
+- Project Leader:
+  - shunirr
+- Assistants
+  - ssig33
+  - ラーメン二郎
 
