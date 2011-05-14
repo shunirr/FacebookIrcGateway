@@ -13,6 +13,7 @@ require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+USERLIST = 'userlist.yaml'
 
 module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
@@ -28,14 +29,14 @@ module FacebookIrcGateway
       '#facebook'
     end
   
-    def initialize(*args)
+    def initialize(server, socket, logger, opts={})
       super
 
       begin
         agent = FacebookOAuth::Client.new(
-          :application_id     => CONFIG['id'],
-          :application_secret => CONFIG['secret'],
-          :callback           => CONFIG['callback']
+          :application_id     => @opts.app_id,
+          :application_secret => @opts.app_secret,
+          :callback           => @opts.callback
         )
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
@@ -45,23 +46,18 @@ module FacebookIrcGateway
         end
       end
   
-      # got oauth client code?
-      @setup = CONFIG['code'].nil?
-  
-      if @setup then
-        @client = agent
-        return
-      end
-  
+      @me = {}
       begin
-        @access_token = agent.authorize(:code => CONFIG['code'])
+        @access_token = agent.authorize(:code => @opts.code)
         @client = FacebookOAuth::Client.new(
-          :application_id     => CONFIG['id'],
-          :application_secret => CONFIG['secret'],
+          :application_id     => @opts.app_id,
+          :application_secret => @opts.app_secret,
           :token              => @access_token.token
         )
   
-        @myid = @client.me.feed['data'][0]['from']['id']
+        me = @client.me.feed['data'][0]
+        @me[:id]   = me['from']['id']
+        @me[:name] = get_name(:data => me['from'])
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
@@ -71,9 +67,8 @@ module FacebookIrcGateway
       end
 
       @posts = []
-
       begin
-        @userlist = YAML::load_file(@opts.userlist)
+        @userlist = YAML::load_file(USERLIST)
       rescue Exception => e
         @userlist = {}
       end
@@ -140,12 +135,12 @@ module FacebookIrcGateway
 
           if data['id'] == did
             mes  = data['message']
-            name = n(data['from'])
+            name = get_name(:data => data['from'])
           else
             data['comments']['data'].each do |comment|
               if comment['id'] == did
                 mes  = comment['message']
-                name = n(comment['from'])
+                name = get_name(:data => comment['from'])
               end
             end if data['comments']
           end
@@ -159,7 +154,7 @@ module FacebookIrcGateway
           begin
             did, data = @timeline[tid] 
             id = @client.status(data['id']).comments(:create, :message => mes)['id']
-            tname = n(data['from'])
+            tname = get_name(:data => data['from'])
             tmes  = data['message']
             post server_name, NOTICE, main_channel, "#{mes} >> #{tname}: #{tmes}"
             @posts.push [id, mes]
@@ -227,7 +222,7 @@ module FacebookIrcGateway
       friends = []
       @client.me.friends['data'].each do |i|
         id   = i['id']
-        name = n(i)
+        name = get_name(:data => i)
         friends << {:id => id, :name => name}
       end
 
@@ -260,7 +255,7 @@ module FacebookIrcGateway
           message     = d['message']
           app_name    = d['application']['name'] if d['application']
           from_id     = d['from']['id']
-          name        = n(d['from'])
+          name        = get_name(:data => d['from'])
           link        = d['link']
           caption     = d['caption']
           description = d['description']
@@ -296,14 +291,14 @@ module FacebookIrcGateway
               tokens << '(via web)'.irc_colorize(:color => :teal)
             end
 
-            @client.status(id).likes(:create) if args[:opts].autoliker == true
+            # @client.status(id).likes(:create) if @opts.autoliker == true
   
             post name, PRIVMSG, main_channel, tokens.join(' ')
           end
   
           comments.each do |comment|
             cid   = comment['id']
-            cname = n(comment['from'])
+            cname = get_name(:data => comment['from'])
             cmes  = comment['message']
             unless db.include?(cid)
               db[cid] = '1'
@@ -315,36 +310,46 @@ module FacebookIrcGateway
 
           likes.each do |like|
             lid   = "#{id}_like_#{like['id']}"
-            lname = n(like)
+            lname = get_name(:data => like)
             unless db.include?(lid)
               db[lid] = '1'
               tokens = ['(like)'.irc_colorize(:color => :teal), "#{name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
-          end if likes and from_id == @myid
+          end if likes and from_id == @me[:id]
   
         end
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
+        e.backtrace.each do |l|
+          @log.error "\t#{l}"
+        end
       ensure
         db.close rescue nil
       end
     end
 
-    def n(data)
-      _n(data['id'], data['name'].gsub(/\s+/, ''))
-    end
+    def get_name(options={})
+      if options[:data]
+        id   = options[:data]['id']
+        name = options[:data]['name'].gsub(/\s+/, '')
+      else
+        id   = options[:id]
+        name = options[:name]
+      end
 
-    def _n(id, name)
-      unless @userlist[id]
+      @userlist = {} if @userlist.nil?
+      if @userlist[id].nil?
         @userlist[id] = name
-        open(@opts.userlist, 'w') do |f|
+        open(USERLIST, 'w') do |f|
           f.puts @userlist.ya2yaml(:syck_compatible => true)
         end
       end
+
       @userlist[id]
     end
+
   end
 end
 
