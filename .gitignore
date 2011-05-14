@@ -1,3 +1,6 @@
 Gemfile.lock
 .bundle
 vendor/bundle
+userlist.yaml
+config.yaml
+
