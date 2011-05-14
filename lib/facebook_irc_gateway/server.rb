@@ -318,7 +318,8 @@ module FacebookIrcGateway
             lname = n(like)
             unless db.include?(lid)
               db[lid] = '1'
-              post lname, PRIVMSG, main_channel, "(like) #{name}: #{message}"
+              tokens = ['(like)'.irc_colorize(:color => :teal), "#{name}: ", message]
+              post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if likes and from_id == @myid
   
