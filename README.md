@@ -8,6 +8,8 @@ You can be as follows:
 - Reading news feed.
 - Reading comments on news feed.
 - Update your status.
+- Like using TypableMap.
+- Comment using TypableMap.
 
 ## Before Using
 First of All, need to setup environments.
@@ -37,8 +39,6 @@ Run
 Have A FUN!!
 
 ## Todo
-- Support Like
-- Support TypableMap
 
 ## Credits
 - Project Leader:
@@ -57,7 +57,8 @@ IRC サーバーのふりをする Facebook クライアントです
 - ニュースフィードの閲覧
 - ニュースフィードについたコメントの閲覧
 - ステータスの更新
-
+- TypableMap を使って "いいね！"
+- TypableMap を使ってコメント
 
 ## セットアップ
 以下のソフトウェアに依存しています
