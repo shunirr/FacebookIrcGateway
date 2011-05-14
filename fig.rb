@@ -41,8 +41,8 @@ end
 begin
   opts = YAML::load_file(config_path)
 rescue Exception => e
-  puts 'Fail to load config file...'
-  exit -1
+#  puts 'Fail to load config file...'
+#  exit -1
 end
 
 opts = {} if opts.class != Hash.class
@@ -53,9 +53,8 @@ opts[:app_id]     = pit['id']
 opts[:app_secret] = pit['secret']
 opts[:callback]   = pit['callback']
 opts[:code]       = pit['code']
-
-#opts[:logger] = Logger.new($stdout, 'daily')
-#opts[:logger].level = Logger::DEBUG
+opts[:logger]     = Logger.new($stdout, 'daily')
+opts[:logger].level = Logger::DEBUG
 
 Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start
 
