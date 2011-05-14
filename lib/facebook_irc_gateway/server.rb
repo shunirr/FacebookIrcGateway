@@ -10,6 +10,7 @@ require 'open-uri'
 require 'yaml'
 require 'ya2yaml'
 
+require 'facebook_irc_gateway/channel'
 require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
 require 'facebook_irc_gateway/constants'
@@ -68,6 +69,13 @@ module FacebookIrcGateway
       end
 
       @posts = []
+      @channels = {}
+
+      begin
+        @userlist = YAML::load_file(@opts.userlist)
+      rescue Exception => e
+        @userlist = {}
+      end
     end
   
     def on_user(m)
@@ -198,9 +206,25 @@ module FacebookIrcGateway
     end
   
     def on_join(m)
+      channels = m.params[0].split(',')
+      channels.each do |channel|
+        channel.strip!
+        next if main_channel == channel
+        @log.debug "join: #{channel}"
+        @channels[channel] = Channel.new(self, channel)
+        post @prefix, JOIN, channel
+      end
     end
   
     def on_part(m)
+      channels = m.params[0].split(',')
+      channels.each do |channel|
+        channel.strip!
+        next if main_channel == channel
+        @log.debug "part: #{channel}"
+        @channels.delete(channel)
+        post @prefix, PART, channel
+      end
     end
   
     private
