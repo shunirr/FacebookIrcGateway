@@ -68,6 +68,8 @@ module FacebookIrcGateway
           @log.error "\t#{l}"
         end
       end
+
+      @posts = []
     end
   
     def on_user(m)
@@ -151,21 +153,29 @@ module FacebookIrcGateway
             did, data = @timeline[tid] 
             id = @client.status(data['id']).comments(:create, :message => mes)['id']
             post server_name, NOTICE, main_channel, "#{mes} >> #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+            @posts.push [id, mes]
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Invalid TypableMap'
           end
         end
-      #when 'undo'
       else
-        begin
-          id = @client.me.feed(:create, :message => message)['id']
-          post server_name, NOTICE, main_channel, "#{message} (#{id})"
-        rescue Exception => e
-          post server_name, NOTICE, main_channel, 'Fail Update...'
-          @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
+        case message
+        when 'undo'
+          id, message = @posts.pop
+          @client.send(:_delete, id)
+          post server_name, NOTICE, main_channel, "delete: #{message}"
+        else
+          begin
+            id = @client.me.feed(:create, :message => message)['id']
+            @posts.push [id, message]
+            post server_name, NOTICE, main_channel, "#{message} (#{id})"
+          rescue Exception => e
+            post server_name, NOTICE, main_channel, 'Fail Update...'
+            @log.error "#{__FILE__}: #{__LINE__}L"
+            @log.error e.inspect
+            e.backtrace.each do |l|
+              @log.error "\t#{l}"
+            end
           end
         end
       end
