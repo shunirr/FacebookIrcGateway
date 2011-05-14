@@ -45,6 +45,10 @@ OptionParser.new do |parser|
       opts[:log] = log
     end
 
+    on('-a', '--autoliker LOG', 'Auto Like Mode') do |log|
+      opts[:autoliker] = true
+    end
+
     parse!(ARGV)
   end
 end
