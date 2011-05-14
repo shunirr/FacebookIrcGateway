@@ -255,34 +255,31 @@ module FacebookIrcGateway
             tid = @timeline.push([id, d])
             db[id] = '1'
   
-            mes = "#{message} "
+            tokens = []
+            tokens << message
+
             if caption
-              if mes != ''
-                mes += '/ '
-              end
-              mes += "#{caption} "
+              tokens << '/' if not message.empty?
+              tokens << caption
             end
   
             if description
-              if mes != ''
-                mes += '/ '
-              end
-              mes += "#{description} "
+              tokens << '/' if not message.empty?
+              tokens << description
             end
   
-            mes += " #{Utils.shorten_url(link)} " if link
-
-            mes += "(#{tid}) " if tid
+            tokens << "#{Utils.shorten_url(link)}" if link
+            tokens << "(#{tid})".irc_colorize(:color => :teal) if tid
   
             if app_name
-              mes += "(via #{app_name}) "
+              tokens << "(via #{app_name})".irc_colorize(:color => :teal)
             else
-              mes += '(via web) '
+              tokens << '(via web)'.irc_colorize(:color => :teal)
             end
 
             @client.status(id).likes(:create) if args[:opts].autoliker == true
   
-            post name, PRIVMSG, main_channel, mes
+            post name, PRIVMSG, main_channel, tokens.join(' ')
           end
   
           comments.each do |comment|
@@ -292,7 +289,8 @@ module FacebookIrcGateway
             unless db.include?(cid)
               db[cid] = '1'
               ctid = @timeline.push([cid, d])
-              post cname, PRIVMSG, main_channel, "#{cmes} (#{ctid}) >> #{name}: #{message}"
+              tokens = [cmes, "(#{ctid})".irc_colorize(:color => :teal), '>>', "#{name}:", message]
+              post cname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if comments
 
