@@ -311,7 +311,7 @@ module FacebookIrcGateway
               db[lid] = '1'
               post lname, PRIVMSG, main_channel, "(like) #{name}: #{message}"
             end
-          end if likes and from_id == myid
+          end if likes and from_id == @myid
   
         end
       rescue Exception => e
