@@ -28,3 +28,51 @@ module FacebookIrcGateway
     end
   end
 end
+
+class String
+  IRC_COLORMAP = {
+    :white => 0,
+    :black => 1,
+    :blue => 2,
+    :navy => 2,
+    :green => 3,
+    :red => 4,
+    :brown => 5,
+    :maroon => 5,
+    :purple => 6,
+    :orange => 7,
+    :olive => 7,
+    :yellow => 8,
+    :light_green => 9,
+    :lime => 9,
+    :teal => 10,
+    :blue_cyan => 10,
+    :light_cyan => 11,
+    :cyan => 11,
+    :aqua => 11,
+    :light_blue => 12,
+    :royal => 12,
+    :pink => 13,
+    :light_purple => 13,
+    :fuchsia => 13,
+    :grey => 14,
+    :light_grey => 15,
+    :silver => 15
+  }
+
+  def irc_colorize(options = {})
+    color = options[:color]
+    color = IRC_COLORMAP[color.to_sym] if color.class == Symbol or color.class == String
+    background = options[:background]
+    background = IRC_COLORMAP[background.to_sym] if background.class == Symbol  or background.class == String
+
+    return self if color.nil? and background.nil?
+
+    if background.nil?
+      return "\x03#{color}#{self}\x03"
+    else
+      return "\x03#{color},#{background}#{self}\x03"
+    end
+  end
+end
+
