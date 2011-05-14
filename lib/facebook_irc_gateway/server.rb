@@ -120,6 +120,7 @@ module FacebookIrcGateway
   
     def on_privmsg(m)
       super
+      channel_name = m[0]
       message = m[1]
 
       command, tid, mes = message.split(' ', 3)
@@ -166,9 +167,14 @@ module FacebookIrcGateway
           post server_name, NOTICE, main_channel, "delete: #{message}"
         else
           begin
-            id = @client.me.feed(:create, :message => message)['id']
-            @posts.push [id, message]
-            post server_name, NOTICE, main_channel, "#{message} (#{id})"
+            if channel == main_channel
+              id = @client.me.feed(:create, :message => message)['id']
+              @posts.push [id, message]
+              post server_name, NOTICE, main_channel, "#{message} (#{id})"
+            else
+              channel = @channels[channel_name]
+              channel.on_privmsg(m) if channel
+            end
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Fail Update...'
             @log.error "#{__FILE__}: #{__LINE__}L"
@@ -226,6 +232,9 @@ module FacebookIrcGateway
         post @prefix, PART, channel
       end
     end
+
+    attr :log
+    public :post
   
     private
     def check_friends
