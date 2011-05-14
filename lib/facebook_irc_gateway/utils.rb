@@ -5,7 +5,7 @@ Net::HTTP.version_1_2
 
 module FacebookIrcGateway
   class Utils
-    def shorten_url(url)
+    def self.shorten_url(url)
       # already shoten
       return url if url.size < 20
   

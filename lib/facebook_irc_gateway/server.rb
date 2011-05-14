@@ -9,6 +9,7 @@ require 'openssl'
 require 'open-uri'
 
 require 'facebook_irc_gateway/utils'
+require 'facebook_irc_gateway/typable_map'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
@@ -80,7 +81,7 @@ module FacebookIrcGateway
         r.update(key => value)
       }
   
-      @timeline = []
+      @timeline = TypableMap.new(200, false)
       @check_friends_thread = Thread.start do
         # TODO: loop
         begin
@@ -118,21 +119,45 @@ module FacebookIrcGateway
     def on_privmsg(m)
       super
       message = m[1]
-      begin
-        id = @client.me.feed(:create, :message => message)['id']
-        post server_name, NOTICE, main_channel, "#{message} (#{id})"
+
+      command, params, mes = message.split(' ', 3)
+      case command.downcase
+      when 'like'
+        data = @timeline[params] 
+        @client.status(data['id']).likes(:create)
+        post server_name, NOTICE, main_channel, "like for #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+      when 're'
+        if mes
+          data = @timeline[params] 
+          id = @client.status(data['id']).comments(:create, :message => mes)['id']
+          post server_name, NOTICE, main_channel, "#{mes} >> #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+        end
+      else
+        begin
+          id = @client.me.feed(:create, :message => message)['id']
+          post server_name, NOTICE, main_channel, "#{message} (#{id})"
+        rescue Exception => e
+          post server_name, NOTICE, main_channel, 'Fail Update...'
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
+          end
+        end
+      end
+
+      if id
         begin
           db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
           db[id] = '1'
+        rescue Exception => e
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
+          end
         ensure
           db.close
-        end
-      rescue Exception => e
-        post server_name, NOTICE, main_channel, 'Fail Update...'
-        @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
         end
       end
     end
@@ -198,6 +223,8 @@ module FacebookIrcGateway
           comments    = d['comments']['data'] if d['comments']
           #likes       = d['likes']['data'] if d['likes']
   
+          tid = @timeline.push(d)
+
           message = '' unless message
           name = server_name unless name
   
@@ -226,6 +253,8 @@ module FacebookIrcGateway
             else
               mes += '(web) '
             end
+
+            mes += "(#{tid}) " if tid
   
             post name, PRIVMSG, main_channel, mes
           end
