@@ -72,6 +72,7 @@ You want to delete just before update status:
   - shunirr
 - Assistants
   - ssig33
+  - mashiro
   - ラーメン二郎
 
 
