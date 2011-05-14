@@ -132,6 +132,7 @@ module FacebookIrcGateway
           id = @client.status(data['id']).comments(:create, :message => mes)['id']
           post server_name, NOTICE, main_channel, "#{mes} >> #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
         end
+      #when 'undo'
       else
         begin
           id = @client.me.feed(:create, :message => message)['id']
@@ -221,7 +222,7 @@ module FacebookIrcGateway
           caption     = d['caption']
           description = d['description']
           comments    = d['comments']['data'] if d['comments']
-          #likes       = d['likes']['data'] if d['likes']
+          likes       = d['likes']['data'] if d['likes']
   
           tid = @timeline.push(d)
 
@@ -267,6 +268,15 @@ module FacebookIrcGateway
               post cname, PRIVMSG, main_channel, "#{comment['message']} >> #{name}: #{message}"
             end
           end if comments
+
+          likes.each do |like|
+            lid   = "#{id}_like_#{like['id']}"
+            lname = like['name'].gsub(/\s+/, '')
+            unless db.include?(lid)
+              db[cid] = '1'
+              post lname, PRIVMSG, main_channel, "like: #{comment['message']}"
+            end
+          end if likes
   
         end
       rescue Exception => e
