@@ -60,7 +60,7 @@ module FacebookIrcGateway
           :token              => @access_token.token
         )
   
-        @myid = @client.me.feed['data'][0]['from']['id'].to_i
+        @myid = @client.me.feed['data'][0]['from']['id']
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
@@ -122,17 +122,38 @@ module FacebookIrcGateway
       super
       message = m[1]
 
-      command, params, mes = message.split(' ', 3)
+      command, tid, mes = message.split(' ', 3)
       case command.downcase
       when 'like'
-        data = @timeline[params] 
-        @client.status(data['id']).likes(:create)
-        post server_name, NOTICE, main_channel, "like for #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+        begin
+          did, data = @timeline[tid] 
+          @client.status(did).likes(:create)
+
+          if data['id'] == did
+            mes = data['message']
+            name = data['from']['name'].gsub(/\s+/, '')
+          else
+            data['comments']['data'].each do |comment|
+              if comment['id'] == did
+                mes = comment['message']
+                name = comment['from']['name'].gsub(/\s+/, '')
+              end
+            end if data['comments']
+          end
+
+          post server_name, NOTICE, main_channel, "like for #{name}: #{mes}"
+        rescue Exception => e
+          post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+        end
       when 're'
         if mes
-          data = @timeline[params] 
-          id = @client.status(data['id']).comments(:create, :message => mes)['id']
-          post server_name, NOTICE, main_channel, "#{mes} >> #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+          begin
+            did, data = @timeline[tid] 
+            id = @client.status(data['id']).comments(:create, :message => mes)['id']
+            post server_name, NOTICE, main_channel, "#{mes} >> #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+          rescue Exception => e
+            post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+          end
         end
       #when 'undo'
       else
@@ -219,6 +240,7 @@ module FacebookIrcGateway
           id          = d['id']
           message     = d['message']
           app_name    = d['application']['name'] if d['application']
+          from_id     = d['from']['id']
           name        = d['from']['name'].gsub(/\s+/, '')
           link        = d['link']
           caption     = d['caption']
@@ -230,7 +252,7 @@ module FacebookIrcGateway
           name = server_name unless name
   
           unless db.include?(id)
-            tid = @timeline.push(d)
+            tid = @timeline.push([id, d])
             db[id] = '1'
   
             mes = "#{message} "
@@ -266,9 +288,11 @@ module FacebookIrcGateway
           comments.each do |comment|
             cid   = comment['id']
             cname = comment['from']['name'].gsub(/\s+/, '')
+            cmes  = comment['message']
             unless db.include?(cid)
               db[cid] = '1'
-              post cname, PRIVMSG, main_channel, "#{comment['message']} >> #{name}: #{message}"
+              ctid = @timeline.push([cid, d])
+              post cname, PRIVMSG, main_channel, "#{cmes} (#{ctid}) >> #{name}: #{message}"
             end
           end if comments
 
@@ -279,7 +303,7 @@ module FacebookIrcGateway
               db[lid] = '1'
               post lname, PRIVMSG, main_channel, "(like) #{name}: #{message}"
             end
-          end if likes
+          end if likes and from_id == myid
   
         end
       rescue Exception => e
