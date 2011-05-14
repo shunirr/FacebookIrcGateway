@@ -29,7 +29,7 @@ module FacebookIrcGateway
   
     def initialize(*args)
       super
-      
+
       begin
         agent = FacebookOAuth::Client.new(
           :application_id     => CONFIG['id'],
@@ -74,6 +74,8 @@ module FacebookIrcGateway
       super
       post @prefix, JOIN, main_channel
       post server_name, MODE, main_channel, '+o', @prefix.nick
+
+      opts_for_feed = @opts.clone
   
       @real, *@opts = @opts.name || @real.split(/\s+/)
       @opts = @opts.inject({}) {|r,i|
@@ -99,7 +101,7 @@ module FacebookIrcGateway
         sleep 3
         while true
           begin
-            check_news
+            check_news(:opts => opts_for_feed)
           rescue Exception => e
             @log.error "#{__FILE__}: #{__LINE__}L"
             @log.error e.inspect
@@ -210,7 +212,7 @@ module FacebookIrcGateway
       end
     end
   
-    def check_news
+    def check_news(args)
       begin
         db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
         @client.me.home['data'].reverse.each do |d|
@@ -223,13 +225,12 @@ module FacebookIrcGateway
           description = d['description']
           comments    = d['comments']['data'] if d['comments']
           likes       = d['likes']['data'] if d['likes']
-  
-          tid = @timeline.push(d)
 
           message = '' unless message
           name = server_name unless name
   
           unless db.include?(id)
+            tid = @timeline.push(d)
             db[id] = '1'
   
             mes = "#{message} "
@@ -255,6 +256,12 @@ module FacebookIrcGateway
               mes += "(#{app_name}) "
             else
               mes += '(web) '
+            end
+
+            if tid
+              mes += "(#{tid}) "
+              data = @timeline[tid]
+              @client.status(data['id']).likes(:create) if args[:opts].autoliker == true
             end
   
             post name, PRIVMSG, main_channel, mes
