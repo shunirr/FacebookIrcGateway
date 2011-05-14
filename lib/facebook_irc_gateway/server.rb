@@ -124,7 +124,7 @@ module FacebookIrcGateway
 
       command, tid, mes = message.split(' ', 3)
       case command.downcase
-      when 'like'
+      when 'like', 'fav'
         begin
           did, data = @timeline[tid] 
           @client.status(did).likes(:create)
@@ -275,9 +275,9 @@ module FacebookIrcGateway
             mes += "(#{tid}) " if tid
   
             if app_name
-              mes += "(#{app_name}) "
+              mes += "(via #{app_name}) "
             else
-              mes += '(web) '
+              mes += '(via web) '
             end
 
             @client.status(id).likes(:create) if args[:opts].autoliker == true
