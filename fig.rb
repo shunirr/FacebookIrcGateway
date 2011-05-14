@@ -21,6 +21,7 @@ opts = {
   :port => 16822,
   :host => 'localhost',
   :log  => nil,
+  :userlist => 'userlist.yaml',
 }
 
 OptionParser.new do |parser|
@@ -47,6 +48,10 @@ OptionParser.new do |parser|
 
     on('-a', '--autoliker LOG', 'Auto Like Mode') do |log|
       opts[:autoliker] = true
+    end
+
+    on('-u', '--userlist userlist.yaml', 'userlist.yaml') do |userlist|
+      opts[:userlist] = userlist
     end
 
     parse!(ARGV)

@@ -7,6 +7,7 @@ require 'oauth'
 require 'facebook_oauth'
 require 'openssl'
 require 'open-uri'
+require 'ya2yaml'
 
 require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
@@ -70,6 +71,12 @@ module FacebookIrcGateway
       end
 
       @posts = []
+
+      begin
+        @userlist = YAML::load_file(@opts.userlist)
+      rescue Exception => e
+        @userlist = {}
+      end
     end
   
     def on_user(m)
@@ -132,13 +139,13 @@ module FacebookIrcGateway
           @client.status(did).likes(:create)
 
           if data['id'] == did
-            mes = data['message']
-            name = data['from']['name'].gsub(/\s+/, '')
+            mes  = data['message']
+            name = n(data['from'])
           else
             data['comments']['data'].each do |comment|
               if comment['id'] == did
-                mes = comment['message']
-                name = comment['from']['name'].gsub(/\s+/, '')
+                mes  = comment['message']
+                name = n(comment['from'])
               end
             end if data['comments']
           end
@@ -152,7 +159,9 @@ module FacebookIrcGateway
           begin
             did, data = @timeline[tid] 
             id = @client.status(data['id']).comments(:create, :message => mes)['id']
-            post server_name, NOTICE, main_channel, "#{mes} >> #{data['from']['name'].gsub(/\s+/, '')}: #{data['message']}"
+            tname = n(data['from'])
+            tmes  = data['message']
+            post server_name, NOTICE, main_channel, "#{mes} >> #{tname}: #{tmes}"
             @posts.push [id, mes]
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Invalid TypableMap'
@@ -215,20 +224,20 @@ module FacebookIrcGateway
     def check_friends
       first = true unless @friends
       @friends ||= []
-      friends = @client.me.friends['data'].map do |i|
-        {
-          'name' => i['name'].gsub(/\s+/,''), 
-          'id'   => i['id'].to_i
-        }
+      friends = []
+      @client.me.friends['data'].each do |i|
+        id   = i['id']
+        name = n(i)
+        friends << {:id => id, :name => name}
       end
-  
+
       if first
         @friends = friends
-        post server_name, RPL_NAMREPLY,   @nick, '=', main_channel, @friends.map{|i| "@#{i['name']}" }.join(' ')
+        post server_name, RPL_NAMREPLY, @nick, '=', main_channel, @friends.map{|i| "@#{i[:name]}" }.join(' ')
         post server_name, RPL_ENDOFNAMES, @nick, main_channel, 'End of NAMES list'
       else
-        prv_friends = @friends.map {|i| i['name'] }
-        now_friends =  friends.map {|i| i['name'] }
+        prv_friends = @friends.map {|i| i[:name] }
+        now_friends =  friends.map {|i| i[:name] }
   
         (now_friends - prv_friends).each do |join|
           join = "@#{join}"
@@ -251,7 +260,7 @@ module FacebookIrcGateway
           message     = d['message']
           app_name    = d['application']['name'] if d['application']
           from_id     = d['from']['id']
-          name        = d['from']['name'].gsub(/\s+/, '')
+          name        = n(d['from'])
           link        = d['link']
           caption     = d['caption']
           description = d['description']
@@ -294,7 +303,7 @@ module FacebookIrcGateway
   
           comments.each do |comment|
             cid   = comment['id']
-            cname = comment['from']['name'].gsub(/\s+/, '')
+            cname = n(comment['from'])
             cmes  = comment['message']
             unless db.include?(cid)
               db[cid] = '1'
@@ -306,7 +315,7 @@ module FacebookIrcGateway
 
           likes.each do |like|
             lid   = "#{id}_like_#{like['id']}"
-            lname = like['name'].gsub(/\s+/, '')
+            lname = n(like)
             unless db.include?(lid)
               db[lid] = '1'
               post lname, PRIVMSG, main_channel, "(like) #{name}: #{message}"
@@ -320,6 +329,20 @@ module FacebookIrcGateway
       ensure
         db.close rescue nil
       end
+    end
+
+    def n(data)
+      _n(data['id'], data['name'].gsub(/\s+/, ''))
+    end
+
+    def _n(id, name)
+      unless @userlist[id]
+        @userlist[id] = name
+        open(@opts.userlist, 'w') do |f|
+          f.puts @userlist.ya2yaml(:syck_compatible => true)
+        end
+      end
+      @userlist[id]
     end
   end
 end
