@@ -38,7 +38,34 @@ Run
 
 Have A FUN!!
 
+## Typable Map Command
+
+    19:40 (shunirr) Im so sleepy. (hoge) (via web)
+
+You want to update comment this status:
+
+    re hoge lets sleep together.
+
+You want to like this status:
+
+    like hoge
+
+or 
+
+    fav hoge
+
+You want to delete just before update status:
+
+    undo
+
 ## Todo
+- Support Unlike.
+- Support Group.
+- Support Event.
+- Support Question.
+- Support user follow using TypableMap.
+- Support shoten user name.
+- Support channel.
 
 ## Credits
 - Project Leader:
@@ -84,4 +111,25 @@ Bundler でセットアップします
     bundle exec ruby fig.rb
 
 Have A FUN!!
+
+## Typable Map コマンド集
+
+    19:40 (shunirr) ねむい (hoge) (via web)
+
+この発言にコメントを付けたい場合:
+
+    re hoge 一緒にねよう！
+
+この発言をいいね！したい場合:
+
+    like hoge
+
+または
+
+    fav hoge
+
+直前の発言を消したい場合:
+
+    undo
+
 
