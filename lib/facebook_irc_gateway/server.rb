@@ -81,7 +81,7 @@ module FacebookIrcGateway
         r.update(key => value)
       }
   
-      @timeline = TypableMap.new(1000, true)
+      @timeline = TypableMap.new(6000, true)
       @check_friends_thread = Thread.start do
         # TODO: loop
         begin
@@ -247,14 +247,14 @@ module FacebookIrcGateway
             end
   
             mes += " #{Utils.shorten_url(link)} " if link
+
+            mes += "(#{tid}) " if tid
   
             if app_name
               mes += "(#{app_name}) "
             else
               mes += '(web) '
             end
-
-            mes += "(#{tid}) " if tid
   
             post name, PRIVMSG, main_channel, mes
           end
