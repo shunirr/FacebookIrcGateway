@@ -277,7 +277,7 @@ module FacebookIrcGateway
             lname = like['name'].gsub(/\s+/, '')
             unless db.include?(lid)
               db[lid] = '1'
-              post lname, PRIVMSG, main_channel, "like: #{message}"
+              post lname, PRIVMSG, main_channel, "(like) #{name}: #{message}"
             end
           end if likes
   
