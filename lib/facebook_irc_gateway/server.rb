@@ -258,11 +258,7 @@ module FacebookIrcGateway
               mes += '(web) '
             end
 
-            if tid
-              mes += "(#{tid}) "
-              data = @timeline[tid]
-              @client.status(data['id']).likes(:create) if args[:opts].autoliker == true
-            end
+            @client.status(id).likes(:create) if args[:opts].autoliker == true
   
             post name, PRIVMSG, main_channel, mes
           end
@@ -280,8 +276,8 @@ module FacebookIrcGateway
             lid   = "#{id}_like_#{like['id']}"
             lname = like['name'].gsub(/\s+/, '')
             unless db.include?(lid)
-              db[cid] = '1'
-              post lname, PRIVMSG, main_channel, "like: #{comment['message']}"
+              db[lid] = '1'
+              post lname, PRIVMSG, main_channel, "like: #{message}"
             end
           end if likes
   
