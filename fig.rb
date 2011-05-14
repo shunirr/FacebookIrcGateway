@@ -10,7 +10,7 @@ require 'optparse'
 
 require 'facebook_irc_gateway'
 
-CONFIG = Pit.get("facebok_irc_gateway", :require => {
+CONFIG = Pit.get("facebook_irc_gateway", :require => {
   'id'       => 'Application ID',
   'secret'   => 'Application Secret',
   'callback' => 'Callback URL',

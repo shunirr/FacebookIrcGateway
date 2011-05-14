@@ -37,7 +37,7 @@ puts "---"
 print "Please access this URL, and Allow this Application, and Paste new URL: "
 code = gets.chomp.split("code=").last
 
-Pit.set("facebok_irc_gateway", :data => {
+Pit.set("facebook_irc_gateway", :data => {
   'id' => config['app']['id'],
   'secret' => config['app']['secret'],
   'callback' => config['app']['callback'],
