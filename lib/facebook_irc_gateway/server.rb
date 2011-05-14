@@ -81,7 +81,7 @@ module FacebookIrcGateway
         r.update(key => value)
       }
   
-      @timeline = TypableMap.new(200, false)
+      @timeline = TypableMap.new(1000, true)
       @check_friends_thread = Thread.start do
         # TODO: loop
         begin
