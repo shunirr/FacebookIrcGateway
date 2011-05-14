@@ -167,7 +167,7 @@ module FacebookIrcGateway
           post server_name, NOTICE, main_channel, "delete: #{message}"
         else
           begin
-            if channel == main_channel
+            if channel_name == main_channel
               id = @client.me.feed(:create, :message => message)['id']
               @posts.push [id, message]
               post server_name, NOTICE, main_channel, "#{message} (#{id})"
