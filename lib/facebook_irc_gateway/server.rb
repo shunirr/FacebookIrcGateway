@@ -13,7 +13,6 @@ require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
-USERLIST = 'userlist.yaml'
 
 module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
@@ -68,7 +67,7 @@ module FacebookIrcGateway
 
       @posts = []
       begin
-        @userlist = YAML::load_file(USERLIST)
+        @userlist = YAML::load_file(@opts.userlist)
       rescue Exception => e
         @userlist = {}
       end
@@ -78,14 +77,6 @@ module FacebookIrcGateway
       super
       post @prefix, JOIN, main_channel
       post server_name, MODE, main_channel, '+o', @prefix.nick
-
-      opts_for_feed = @opts.clone
-  
-      @real, *@opts = @opts.name || @real.split(/\s+/)
-      @opts = @opts.inject({}) {|r,i|
-        key, value = i.split('=')
-        r.update(key => value)
-      }
   
       @timeline = TypableMap.new(6000, true)
       @check_friends_thread = Thread.start do
@@ -105,7 +96,7 @@ module FacebookIrcGateway
         sleep 3
         while true
           begin
-            check_news(:opts => opts_for_feed)
+            check_news
           rescue Exception => e
             @log.error "#{__FILE__}: #{__LINE__}L"
             @log.error e.inspect
@@ -247,7 +238,7 @@ module FacebookIrcGateway
       end
     end
   
-    def check_news(args)
+    def check_news
       begin
         db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
         @client.me.home['data'].reverse.each do |d|
@@ -283,15 +274,15 @@ module FacebookIrcGateway
             end
   
             tokens << "#{Utils.shorten_url(link)}" if link
-            tokens << "(#{tid})".irc_colorize(:color => :teal) if tid
+            tokens << "(#{tid})".irc_colorize(:color => @opts.color[:tid]) if tid
   
             if app_name
-              tokens << "(via #{app_name})".irc_colorize(:color => :teal)
+              tokens << "(via #{app_name})".irc_colorize(:color => @opts.color[:app_name])
             else
-              tokens << '(via web)'.irc_colorize(:color => :teal)
+              tokens << '(via web)'.irc_colorize(:color => @opts.color[:app_name])
             end
 
-            # @client.status(id).likes(:create) if @opts.autoliker == true
+            @client.status(id).likes(:create) if @opts.autoliker == true
   
             post name, PRIVMSG, main_channel, tokens.join(' ')
           end
@@ -303,7 +294,7 @@ module FacebookIrcGateway
             unless db.include?(cid)
               db[cid] = '1'
               ctid = @timeline.push([cid, d])
-              tokens = [cmes, "(#{ctid})".irc_colorize(:color => :teal), '>>', "#{name}:", message]
+              tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{name}:", message]
               post cname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if comments
@@ -313,7 +304,7 @@ module FacebookIrcGateway
             lname = get_name(:data => like)
             unless db.include?(lid)
               db[lid] = '1'
-              tokens = ['(like)'.irc_colorize(:color => :teal), "#{name}: ", message]
+              tokens = ['(like)'.irc_colorize(:color => @opts.color[:like]), "#{name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if likes and from_id == @me[:id]
@@ -342,7 +333,7 @@ module FacebookIrcGateway
       @userlist = {} if @userlist.nil?
       if @userlist[id].nil?
         @userlist[id] = name
-        open(USERLIST, 'w') do |f|
+        open(@opts.userlist, 'w') do |f|
           f.puts @userlist.ya2yaml(:syck_compatible => true)
         end
       end
