@@ -38,31 +38,40 @@ OptionParser.new do |parser|
   end
 end
 
+opts = {}
 begin
-  opts = YAML::load_file(config_path)
+  YAML::load_file(config_path).each do |k, v|
+    if k == 'color'
+      opts[k.to_sym] = {}
+      v.each do |kk,vv|
+        opts[k.to_sym][kk.to_sym] = vv.to_sym
+      end
+    else
+      opts[k.to_sym] = v
+    end
+  end
 rescue Exception => e
 #  puts 'Fail to load config file...'
 #  exit -1
 end
 
-opts = {} if opts.class != Hash.class
 opts[:host]         = '127.0.0.1'     if opts[:host].nil?
 opts[:port]         = 16822           if opts[:port].nil?
 opts[:userlist]     = 'userlist.yaml' if opts[:userlist].nil?
 opts[:autoliker]    = false           if opts[:autoliker].nil?
 opts[:color]        = {}              if opts[:color].nil?
-opts[:color][:tid]  = 'teal'          if opts[:color][:tid].nil?
-opts[:color][:app_name] = 'teal'      if opts[:color][:app_name].nil?
-opts[:color][:like] = 'teal'          if opts[:color][:like].nil?
-opts[:color].each do |k,v|
-  opts[:color][k] = v.to_sym
-end
+opts[:color][:tid]  = :teal           if opts[:color][:tid].nil?
+opts[:color][:app_name] = :teal       if opts[:color][:app_name].nil?
+opts[:color][:like] = :teal           if opts[:color][:like].nil?
 opts[:app_id]       = pit['id']
 opts[:app_secret]   = pit['secret']
 opts[:callback]     = pit['callback']
 opts[:code]         = pit['code']
 opts[:logger]       = Logger.new($stdout, 'daily')
 opts[:logger].level = Logger::DEBUG
+
+require 'pp'
+pp opts
 
 Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start
 
