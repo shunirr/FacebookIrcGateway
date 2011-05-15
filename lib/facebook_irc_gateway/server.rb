@@ -167,7 +167,7 @@ module FacebookIrcGateway
                 post server_name, NOTICE, main_channel, "#{message} (#{id})"
               else
                 channel = @channels[channel_name]
-                channel.on_privmsg(m) if channel
+                channel.on_privmsg(message) if channel
               end
             rescue Exception => e
               post server_name, NOTICE, main_channel, 'Fail Update...'
@@ -205,29 +205,34 @@ module FacebookIrcGateway
   
     def on_who(m)
     end
+
+    def on_topic(m)
+      channel_name, topic, = m.params
+      channel = @channels[channel_name]
+      channel.on_topic(topic) if channel
+    end
   
     def on_join(m)
-      channels = m.params[0].split(',')
-      channels.each do |channel|
-        channel.strip!
-        next if main_channel == channel
-        @log.debug "join: #{channel}"
-        @channels[channel] = Channel.new(self, channel)
-        post @prefix, JOIN, channel
+      channel_names = m.params[0].split(',')
+      channel_names.each do |channel_name|
+        channel_name.strip!
+        next if main_channel == channel_name
+        @channels[channel_name] = Channel.new(self, channel_name)
+        post @prefix, JOIN, channel_name
       end
     end
   
     def on_part(m)
-      channels = m.params[0].split(',')
-      channels.each do |channel|
-        channel.strip!
-        next if main_channel == channel
-        @log.debug "part: #{channel}"
-        @channels.delete(channel)
-        post @prefix, PART, channel
+      channel_names = m.params[0].split(',')
+      channel_names.each do |channel_name|
+        channel_name.strip!
+        next if main_channel == channel_name
+        @channels.delete(channel_name)
+        post @prefix, PART, channel_name
       end
     end
 
+    attr :client
     attr :log
     public :post
   

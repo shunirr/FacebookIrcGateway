@@ -5,9 +5,11 @@ module FacebookIrcGateway
     def initialize(server, name)
       @server = server
       @name = name
-      #@object = FacebookOAuth::FacebookObject.new(object_id, @server.client)
+      @topic = nil
+      @object = nil
     end
 
+    # Helpers {{{1
     def post(command, options = {})
       server = options[:server] || @server.server_name
       channel = options[:channel] || @name
@@ -22,10 +24,19 @@ module FacebookIrcGateway
     def notice(message)
       post 'NOTICE', :params => [message]
     end
+    # }}}
 
-    def on_privmsg(m)
-      @server.log.debug m.params[1]
-      notice m.params[1]
+    def on_privmsg(message)
+      notice message
+    end
+
+    def on_topic(topic)
+      @topic = topic
+      @object = FacebookOAuth::FacebookObject.new(topic, @server.client)
+      @object.feed['data'].reverse.each do |item|
+        #TODO: いい感じに出力する
+        #notice item.to_s
+      end
     end
   end
 end
