@@ -120,86 +120,87 @@ module FacebookIrcGateway
   
     def on_privmsg(m)
       super
-      channel_name = m[0]
-      message = m[1]
+      Thread.start{channel_name = m[0]
+        message = m[1]
 
-      command, tid, mes = message.split(' ', 3)
-      case command.downcase
-      when 'like', 'fav'
-        begin
-          did, data = @timeline[tid] 
-          @client.status(did).likes(:create)
-
-          if data['id'] == did
-            mes  = data['message']
-            name = get_name(:data => data['from'])
-          else
-            data['comments']['data'].each do |comment|
-              if comment['id'] == did
-                mes  = comment['message']
-                name = get_name(:data => comment['from'])
-              end
-            end if data['comments']
-          end
-
-          post server_name, NOTICE, main_channel, "like for #{name}: #{mes}"
-        rescue Exception => e
-          post server_name, NOTICE, main_channel, 'Invalid TypableMap'
-        end
-      when 're'
-        if mes
+        command, tid, mes = message.split(' ', 3)
+        case command.downcase
+        when 'like', 'fav'
           begin
             did, data = @timeline[tid] 
-            id = @client.status(data['id']).comments(:create, :message => mes)['id']
-            tname = get_name(:data => data['from'])
-            tmes  = data['message']
-            post server_name, NOTICE, main_channel, "#{mes} >> #{tname}: #{tmes}"
-            @posts.push [id, mes]
+            @client.status(did).likes(:create)
+
+            if data['id'] == did
+              mes  = data['message']
+              name = get_name(:data => data['from'])
+            else
+              data['comments']['data'].each do |comment|
+                if comment['id'] == did
+                  mes  = comment['message']
+                  name = get_name(:data => comment['from'])
+                end
+              end if data['comments']
+            end
+
+            post server_name, NOTICE, main_channel, "like for #{name}: #{mes}"
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Invalid TypableMap'
           end
-        end
-      else
-        case message
-        when 'undo'
-          id, message = @posts.pop
-          @client.send(:_delete, id)
-          post server_name, NOTICE, main_channel, "delete: #{message}"
-        else
-          begin
-            if channel_name == main_channel
-              id = @client.me.feed(:create, :message => message)['id']
-              @posts.push [id, message]
-              post server_name, NOTICE, main_channel, "#{message} (#{id})"
-            else
-              channel = @channels[channel_name]
-              channel.on_privmsg(m) if channel
+        when 're'
+          if mes
+            begin
+              did, data = @timeline[tid] 
+              id = @client.status(data['id']).comments(:create, :message => mes)['id']
+              tname = get_name(:data => data['from'])
+              tmes  = data['message']
+              post server_name, NOTICE, main_channel, "#{mes} >> #{tname}: #{tmes}"
+              @posts.push [id, mes]
+            rescue Exception => e
+              post server_name, NOTICE, main_channel, 'Invalid TypableMap'
             end
+          end
+        else
+          case message
+          when 'undo'
+            id, message = @posts.pop
+            @client.send(:_delete, id)
+            post server_name, NOTICE, main_channel, "delete: #{message}"
+          else
+            begin
+              if channel_name == main_channel
+                id = @client.me.feed(:create, :message => message)['id']
+                @posts.push [id, message]
+                post server_name, NOTICE, main_channel, "#{message} (#{id})"
+              else
+                channel = @channels[channel_name]
+                channel.on_privmsg(m) if channel
+              end
+            rescue Exception => e
+              post server_name, NOTICE, main_channel, 'Fail Update...'
+              @log.error "#{__FILE__}: #{__LINE__}L"
+              @log.error e.inspect
+              e.backtrace.each do |l|
+                @log.error "\t#{l}"
+              end
+            end
+          end
+        end
+
+        if id
+          begin
+            db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
+            db[id] = '1'
           rescue Exception => e
-            post server_name, NOTICE, main_channel, 'Fail Update...'
             @log.error "#{__FILE__}: #{__LINE__}L"
             @log.error e.inspect
             e.backtrace.each do |l|
               @log.error "\t#{l}"
             end
+          ensure
+            db.close
           end
         end
-      end
-
-      if id
-        begin
-          db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
-          db[id] = '1'
-        rescue Exception => e
-          @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
-        ensure
-          db.close
-        end
-      end
+      }
     end
   
     def on_ctcp(target, message)
