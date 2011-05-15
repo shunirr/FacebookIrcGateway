@@ -70,12 +70,6 @@ module FacebookIrcGateway
 
       @posts = []
       @channels = {}
-
-      begin
-        @userlist = YAML::load_file(@opts.userlist)
-      rescue Exception => e
-        @userlist = {}
-      end
     end
   
     def on_user(m)
@@ -366,7 +360,7 @@ module FacebookIrcGateway
         name = options[:data]['name'].gsub(/\s+/, '')
       else
         id   = options[:id]
-        name = options[:name]
+        name = options[:name].gsub(/\s+/, '')
       end
 
       if @userlist.nil?
@@ -378,13 +372,15 @@ module FacebookIrcGateway
       end
 
       if @userlist[id].nil?
-        @userlist[id] = name
+        @userlist[id] = {'name' => name, 'enable' => false}
         open(@opts.userlist, 'w') do |f|
-          f.puts @userlist.ya2yaml(:syck_compatible => true)
+          f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
         end
+      elsif @userlist[id]['enable']
+        name = @userlist[id]['name'] if @userlist[id]['name']
       end
 
-      @userlist[id]
+      name
     end
 
   end

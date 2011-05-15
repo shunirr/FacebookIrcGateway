@@ -1,6 +1,7 @@
 
 require 'net/https'
 require 'json'
+require 'ya2yaml'
 Net::HTTP.version_1_2
 
 module FacebookIrcGateway
@@ -73,6 +74,12 @@ class String
     else
       return "\x03#{color},#{background}#{self}\x03"
     end
+  end
+end
+
+class Object
+  def fig_ya2yaml(options = {})
+    ya2yaml(options).gsub(/^\?\s*/, '').gsub(/\n\s*:/, ':')
   end
 end
 
