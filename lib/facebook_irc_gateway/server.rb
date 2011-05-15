@@ -114,7 +114,8 @@ module FacebookIrcGateway
   
     def on_privmsg(m)
       super
-      Thread.start{channel_name = m[0]
+      Thread.start{
+        channel_name = m[0]
         message = m[1]
 
         command, tid, mes = message.split(' ', 3)
@@ -140,6 +141,28 @@ module FacebookIrcGateway
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Invalid TypableMap'
           end
+        when 'unlike'
+          begin
+            did, data = @timeline[tid] 
+            @client.send(:_delete, "#{did}/likes")
+
+            if data['id'] == did
+              mes  = data['message']
+              name = get_name(:data => data['from'])
+            else
+              data['comments']['data'].each do |comment|
+                if comment['id'] == did
+                  mes  = comment['message']
+                  name = get_name(:data => comment['from'])
+                end
+              end if data['comments']
+            end
+
+            post server_name, NOTICE, main_channel, "unlike for #{name}: #{mes}"
+          rescue Exception => e
+            post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+          end
+
         when 're'
           if mes
             begin
