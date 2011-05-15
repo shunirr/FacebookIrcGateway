@@ -58,15 +58,6 @@ You want to delete just before update status:
 
     undo
 
-## Todo
-- Support Unlike.
-- Support Group.
-- Support Event.
-- Support Question.
-- Support user follow using TypableMap.
-- Support shoten user name.
-- Support channel.
-
 ## Credits
 - Project Leader:
   - shunirr
