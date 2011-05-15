@@ -170,7 +170,6 @@ module FacebookIrcGateway
               id = @client.status(data['id']).comments(:create, :message => mes)['id']
               tname = get_name(:data => data['from'])
               tmes  = data['message']
-              post server_name, NOTICE, main_channel, "#{mes} >> #{tname}: #{tmes}"
               @posts.push [id, mes]
             rescue Exception => e
               post server_name, NOTICE, main_channel, 'Invalid TypableMap'
@@ -187,7 +186,6 @@ module FacebookIrcGateway
               if channel_name == main_channel
                 id = @client.me.feed(:create, :message => message)['id']
                 @posts.push [id, message]
-                post server_name, NOTICE, main_channel, "#{message} (#{id})"
               else
                 channel = @channels[channel_name]
                 channel.on_privmsg(message) if channel
@@ -200,21 +198,6 @@ module FacebookIrcGateway
                 @log.error "\t#{l}"
               end
             end
-          end
-        end
-
-        if id
-          begin
-            db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
-            db[id] = '1'
-          rescue Exception => e
-            @log.error "#{__FILE__}: #{__LINE__}L"
-            @log.error e.inspect
-            e.backtrace.each do |l|
-              @log.error "\t#{l}"
-            end
-          ensure
-            db.close
           end
         end
       }
@@ -345,7 +328,11 @@ module FacebookIrcGateway
 
             @client.status(id).likes(:create) if @opts.autoliker == true
   
-            post from_name, PRIVMSG, main_channel, tokens.join(' ')
+            if from_id == @me[:id]
+              post from_name, NOTICE, main_channel, tokens.join(' ')
+            else
+              post from_name, PRIVMSG, main_channel, tokens.join(' ')
+            end
           end
   
           comments.each do |comment|
@@ -356,7 +343,11 @@ module FacebookIrcGateway
               db[cid] = '1'
               ctid = @timeline.push([cid, d])
               tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{from_name}:", message]
-              post cname, PRIVMSG, main_channel, tokens.join(' ')
+              if comment['from']['id'] == @me[:id]
+                post cname, NOTICE, main_channel, tokens.join(' ')
+              else
+                post cname, PRIVMSG, main_channel, tokens.join(' ')
+              end
             end
           end if comments
 
