@@ -70,8 +70,5 @@ opts[:code]         = pit['code']
 opts[:logger]       = Logger.new($stdout, 'daily')
 opts[:logger].level = Logger::DEBUG
 
-require 'pp'
-pp opts
-
 Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start
 
