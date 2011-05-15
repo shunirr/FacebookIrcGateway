@@ -315,7 +315,7 @@ module FacebookIrcGateway
               tokens << '(via web)'.irc_colorize(:color => @opts.color[:app_name])
             end
 
-            @client.status(id).likes(:create) if @opts.autoliker == true
+            Thread.start{@client.status(id).likes(:create)} if @opts.autoliker == true
   
             post from_name, PRIVMSG, main_channel, tokens.join(' ')
           end
