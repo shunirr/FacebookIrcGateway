@@ -7,10 +7,12 @@ require 'oauth'
 require 'facebook_oauth'
 require 'openssl'
 require 'open-uri'
+require 'yaml'
 require 'ya2yaml'
 
 require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
+require 'facebook_irc_gateway/constants'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
@@ -66,11 +68,6 @@ module FacebookIrcGateway
       end
 
       @posts = []
-      begin
-        @userlist = YAML::load_file(@opts.userlist)
-      rescue Exception => e
-        @userlist = {}
-      end
     end
   
     def on_user(m)
@@ -243,19 +240,27 @@ module FacebookIrcGateway
         db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
         @client.me.home['data'].reverse.each do |d|
           id          = d['id']
-          message     = d['message']
-          app_name    = d['application']['name'] if d['application']
           from_id     = d['from']['id']
-          name        = get_name(:data => d['from'])
+          from_name   = get_name(:data => d['from']) || server_name
+          picture     = d['picture']
           link        = d['link']
+          name        = d['name']
+          if d['properties']
+            properties = d['properties'].map {|p| p['text'] }
+          end
+          icon        = d['icon']
+          type        = d['type']
+          object_id   = d['object_id']
+          if d['application']
+            app_id    = d['application']['id']
+            app_name  = d['application']['name']
+          end
+          message     = d['message'] || ''
           caption     = d['caption']
           description = d['description']
           comments    = d['comments']['data'] if d['comments']
           likes       = d['likes']['data'] if d['likes']
 
-          message = '' unless message
-          name = server_name unless name
-  
           unless db.include?(id)
             tid = @timeline.push([id, d])
             db[id] = '1'
@@ -284,7 +289,7 @@ module FacebookIrcGateway
 
             @client.status(id).likes(:create) if @opts.autoliker == true
   
-            post name, PRIVMSG, main_channel, tokens.join(' ')
+            post from_name, PRIVMSG, main_channel, tokens.join(' ')
           end
   
           comments.each do |comment|
@@ -294,7 +299,7 @@ module FacebookIrcGateway
             unless db.include?(cid)
               db[cid] = '1'
               ctid = @timeline.push([cid, d])
-              tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{name}:", message]
+              tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{from_name}:", message]
               post cname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if comments
@@ -304,7 +309,7 @@ module FacebookIrcGateway
             lname = get_name(:data => like)
             unless db.include?(lid)
               db[lid] = '1'
-              tokens = ['(like)'.irc_colorize(:color => @opts.color[:like]), "#{name}: ", message]
+              tokens = ['(like)'.irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if likes and from_id == @me[:id]
@@ -330,7 +335,14 @@ module FacebookIrcGateway
         name = options[:name]
       end
 
-      @userlist = {} if @userlist.nil?
+      if @userlist.nil?
+        begin
+          @userlist = YAML::load_file(@opts.userlist)
+        rescue Exception => e
+          @userlist = {}
+        end
+      end
+
       if @userlist[id].nil?
         @userlist[id] = name
         open(@opts.userlist, 'w') do |f|
