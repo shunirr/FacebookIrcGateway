@@ -424,6 +424,7 @@ module FacebookIrcGateway
         @userlist[id] = {'name' => name, 'enable' => false}
       else
 	    @userlist[id]['name'] = name
+	    @userlist[id]['enable'] = true
       end
 
       open(@opts.userlist, 'w') do |f|
