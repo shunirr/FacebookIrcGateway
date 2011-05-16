@@ -323,7 +323,12 @@ module FacebookIrcGateway
             db[id] = '1'
   
             tokens = []
-            tokens << message
+            tokens << message if message != ''
+
+            if name
+              tokens << '/' if not message.empty?
+              tokens << name
+            end
 
             if caption
               tokens << '/' if not message.empty?
@@ -332,7 +337,12 @@ module FacebookIrcGateway
   
             if description
               tokens << '/' if not message.empty?
-              tokens << description
+              des = description.split(//u)
+              if des.size > 100
+                tokens << "#{des[0, 100].join('')} ..."
+              else
+                tokens << description
+              end
             end
   
             tokens << "#{Utils.shorten_url(link)}" if link
