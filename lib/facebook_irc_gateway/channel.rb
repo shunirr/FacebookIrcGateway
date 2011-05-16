@@ -2,6 +2,21 @@ require 'facebook_oauth'
 
 module FacebookIrcGateway
   class Channel
+
+    OBJECTS = [
+      'friends',
+      'likes',
+      'movies',
+      'music',
+      'books',
+      'notes',
+      'photos',
+      'albums',
+      'videos',
+      'events',
+      'groups',
+      'checkins']
+
     def initialize(server, name)
       @server = server
       @name = name
@@ -27,7 +42,43 @@ module FacebookIrcGateway
     # }}}
 
     def on_privmsg(message)
-      #notice message
+      # check object command
+      command, args = message.split(/\s+/)
+      @server.log.debug "command: #{[command, args].to_s}"
+
+      if OBJECTS.include?(command)
+        items = @server.client.me.send(command)['data'].reverse
+        @server.log.debug "items: #{items.to_s}"
+
+        if items.empty?
+          notice 'no match found'
+          return
+        else
+          if args.nil?
+            # list show
+            items.each_with_index do |item, index|
+              tokens = item.inject([]) do |result, (key, value)|
+                result << value if ['name', 'category'].include? key
+                result
+              end
+              @server.log.debug "tokens: #{tokens.to_s}"
+              notice "#{index + 1}: #{tokens.join(' / ')}"
+            end
+          else
+            # set object
+            item = items[args.to_i - 1]
+            if item
+              @object = object(item['id'])
+              start
+            else
+              notice 'invalid argument'
+            end
+          end
+        end
+
+        return
+      end
+
       if @object
         item = @object.feed(:create, :message => message)
         @server.log.debug item.to_s
@@ -36,19 +87,26 @@ module FacebookIrcGateway
 
     def on_topic(topic)
       @topic = topic
-      @object = FacebookOAuth::FacebookObject.new(topic, @server.client)
+      @object = object(topic)
+      start
+    end
 
-      if @check_feeds_thread
-        @check_feeds_thread.exit
-        @check_feeds_thread.join
-        @check_feeds_thread = nil
-      end
-      @check_feeds_thread = async do
+    private
+
+    def start
+      stop
+      @check_feed_thread = async do
         check_feed
       end
     end
 
-    private
+    def stop
+      if @check_feed_thread
+        @check_feed_thread.exit
+        @check_feed_thread.join
+        @check_feed_thread = nil
+      end
+    end
 
     def async(options = {})
       @server.log.debug "begin: async"
@@ -78,9 +136,17 @@ module FacebookIrcGateway
       end
     end
 
+    def object(id)
+      FacebookOAuth::FacebookObject.new(id, @server.client)
+    end
+
+    def feed
+      @object.feed['data']
+    end
+
     def check_feed
       @server.log.debug "begin: check_feed"
-      @object.feed['data'].reverse.each do |item|
+      feed.reverse.each do |item|
         #TODO: いい感じに出力する
         #notice item.to_s
         name = item["from"]["name"].gsub(/\s+/, '')
