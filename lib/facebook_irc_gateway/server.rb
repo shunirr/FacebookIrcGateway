@@ -419,7 +419,7 @@ module FacebookIrcGateway
       end
 
       if @userlist[id].nil?
-      set_name(:id => id, :name => name )
+        set_name(:id => id, :name => name )
       elsif @userlist[id]['enable']
         name = @userlist[id]['name'] if @userlist[id]['name']
       end
@@ -442,8 +442,8 @@ module FacebookIrcGateway
       if @userlist[id].nil?
         @userlist[id] = {'name' => name, 'enable' => false}
       else
-      @userlist[id]['name'] = name
-      @userlist[id]['enable'] = true
+        @userlist[id]['name'] = name
+        @userlist[id]['enable'] = true
       end
 
       open(@opts.userlist, 'w') do |f|
