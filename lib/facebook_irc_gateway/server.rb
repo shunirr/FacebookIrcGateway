@@ -141,23 +141,23 @@ module FacebookIrcGateway
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Invalid TypableMap'
           end
-		when 'alias'
+        when 'alias'
           if mes
-		    begin
-		      did, data = @timeline[tid]
+            begin
+              did, data = @timeline[tid]
               if data['id'] == did
-			    old_name = get_name( :data => data['from'] )
+                old_name = get_name( :data => data['from'] )
                 set_name(:id => data['from']['id'], :name => mes )
-			  else
+              else
                 data['comments']['data'].each do |comment|
                   if comment['id'] == did
-			        old_name = get_name( :data => comment['from'] )
+                  old_name = get_name( :data => comment['from'] )
                     set_name(:id => comment['from']['id'], :name => mes )
                   end
                 end if data['comments']
-			  end
+              end
               post server_name, NOTICE, main_channel, "alias #{old_name} for #{mes}"
-		    end
+            end
           end
         when 'unlike'
           begin
@@ -419,7 +419,7 @@ module FacebookIrcGateway
       end
 
       if @userlist[id].nil?
-	    set_name(:id => id, :name => name )
+      set_name(:id => id, :name => name )
       elsif @userlist[id]['enable']
         name = @userlist[id]['name'] if @userlist[id]['name']
       end
@@ -427,7 +427,7 @@ module FacebookIrcGateway
       name
     end
 
-	def set_name(options={})
+    def set_name(options={})
       id   = options[:id]
       name = options[:name].gsub(/\s+/, '')
 
@@ -442,14 +442,14 @@ module FacebookIrcGateway
       if @userlist[id].nil?
         @userlist[id] = {'name' => name, 'enable' => false}
       else
-	    @userlist[id]['name'] = name
-	    @userlist[id]['enable'] = true
+      @userlist[id]['name'] = name
+      @userlist[id]['enable'] = true
       end
 
       open(@opts.userlist, 'w') do |f|
         f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
       end
-	end
+    end
 
   end
 end
