@@ -6,5 +6,6 @@ autoliker: false
 color:
   tid: teal
   like: teal
+  app_name: teal
 
 
