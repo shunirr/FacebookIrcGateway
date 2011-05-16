@@ -1,8 +1,12 @@
 #!/usr/bin/env ruby
+
+$LOAD_PATH << 'lib'
 require 'rubygems'
 require 'oauth'
 require 'facebook_oauth'
 require 'pit'
+
+require 'facebook_irc_gateway/utils'
 
 DEFAULT_APP_ID = '221646024527845'
 DEFAULT_APP_SECRET = '012749b22fcc3111ea88760c209cdb27'
@@ -32,7 +36,7 @@ client = FacebookOAuth::Client.new(
 
 
 puts "---"
-puts client.authorize_url(:scope => 'offline_access, publish_stream, user_status, read_stream')
+puts "#{FacebookIrcGateway::Utils.shorten_url(client.authorize_url(:scope => 'offline_access, publish_stream, user_status, read_stream'))}"
 puts "---"
 print "Please access this URL, and Allow this Application, and Paste new URL: "
 code = gets.chomp.split("code=").last
