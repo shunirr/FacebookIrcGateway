@@ -145,8 +145,17 @@ module FacebookIrcGateway
           if mes
 		    begin
 		      did, data = @timeline[tid]
-			  old_name = get_name( :data => data['from'] )
-              set_name(:id => data['from']['id'], :name => mes )
+              if data['id'] == did
+			    old_name = get_name( :data => data['from'] )
+                set_name(:id => data['from']['id'], :name => mes )
+			  else
+                data['comments']['data'].each do |comment|
+                  if comment['id'] == did
+			        old_name = get_name( :data => comment['from'] )
+                    set_name(:id => comment['from']['id'], :name => mes )
+                  end
+                end if data['comments']
+			  end
               post server_name, NOTICE, main_channel, "alias #{old_name} for #{mes}"
 		    end
           end
