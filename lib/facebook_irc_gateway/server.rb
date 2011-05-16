@@ -141,6 +141,15 @@ module FacebookIrcGateway
           rescue Exception => e
             post server_name, NOTICE, main_channel, 'Invalid TypableMap'
           end
+		when 'alias'
+          if mes
+		    begin
+		      did, data = @timeline[tid]
+			  old_name = get_name( :data => data['from'] )
+              set_name(:id => data['from']['id'], :name => mes )
+              post server_name, NOTICE, main_channel, "alias #{old_name} for #{mes}"
+		    end
+          end
         when 'unlike'
           begin
             did, data = @timeline[tid] 
@@ -391,16 +400,36 @@ module FacebookIrcGateway
       end
 
       if @userlist[id].nil?
-        @userlist[id] = {'name' => name, 'enable' => false}
-        open(@opts.userlist, 'w') do |f|
-          f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
-        end
+	    set_name(:id => id, :name => name )
       elsif @userlist[id]['enable']
         name = @userlist[id]['name'] if @userlist[id]['name']
       end
 
       name
     end
+
+	def set_name(options={})
+      id   = options[:id]
+      name = options[:name].gsub(/\s+/, '')
+
+      if @userlist.nil?
+        begin
+          @userlist = YAML::load_file(@opts.userlist)
+        rescue Exception => e
+          @userlist = {}
+        end
+      end
+
+      if @userlist[id].nil?
+        @userlist[id] = {'name' => name, 'enable' => false}
+      else
+	    @userlist[id]['name'] = name
+      end
+
+      open(@opts.userlist, 'w') do |f|
+        f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
+      end
+	end
 
   end
 end
