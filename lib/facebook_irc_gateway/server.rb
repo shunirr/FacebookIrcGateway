@@ -162,7 +162,7 @@ module FacebookIrcGateway
         when 'unlike'
           begin
             did, data = @timeline[tid] 
-            @client.send(:_delete, "#{did}/likes")
+            @client.status(did).likes(:destroy)
 
             if data['id'] == did
               mes  = data['message']
