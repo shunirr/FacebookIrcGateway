@@ -65,6 +65,8 @@ You want to delete just before update status:
   - ssig33
   - mashiro
   - ラーメン二郎
+- Special thx
+  - yutamoty
 
 
 ## Japanese
