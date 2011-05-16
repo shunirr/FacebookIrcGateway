@@ -23,7 +23,7 @@ unless config['app']['secret']
   config['app']['secret'] = gets.chomp
 end
 
-config['app']['callback'] = 'http://www.facebook.com/connect/login_success.html'
+config['app']['callback'] = 'https://www.facebook.com/connect/login_success.html'
 client = FacebookOAuth::Client.new(
     :application_id     => config['app']['id'],
     :application_secret => config['app']['secret'],
