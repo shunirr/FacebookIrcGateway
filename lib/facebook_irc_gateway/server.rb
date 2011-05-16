@@ -120,7 +120,7 @@ module FacebookIrcGateway
 
         command, tid, mes = message.split(' ', 3)
         case command.downcase
-        when 'like', 'fav'
+        when 'like', 'fav', 'arr'
           begin
             did, data = @timeline[tid] 
             @client.status(did).likes(:create)
