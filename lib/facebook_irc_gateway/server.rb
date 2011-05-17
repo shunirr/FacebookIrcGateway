@@ -164,8 +164,10 @@ module FacebookIrcGateway
 
         command, tid, mes = message.split(' ', 3)
         case command.downcase
-        when 'like', 'fav'
+        when 'like', 'fav', 'arr'
           like tid
+        when 'alias'
+          process_alias tid, mes
         when 'unlike'
           unlike tid
         when 're'
@@ -178,6 +180,26 @@ module FacebookIrcGateway
             update_status message, channel_name
           end
         end
+    end
+
+    def process_alias
+      if mes
+        begin
+          did, data = @timeline[tid]
+          if data['id'] == did
+            old_name = get_name( :data => data['from'] )
+            set_name(:id => data['from']['id'], :name => mes )
+          else
+            data['comments']['data'].each do |comment|
+              if comment['id'] == did
+              old_name = get_name( :data => comment['from'] )
+                set_name(:id => comment['from']['id'], :name => mes )
+              end
+            end if data['comments']
+          end
+          post server_name, NOTICE, main_channel, "alias #{old_name} for #{mes}"
+        end
+      end
     end
 
     def like tid
@@ -321,7 +343,12 @@ module FacebookIrcGateway
             db[id] = '1'
   
             tokens = []
-            tokens << message
+            tokens << message if message != ''
+
+            if name
+              tokens << '/' if not message.empty?
+              tokens << name
+            end
 
             if caption
               tokens << '/' if not message.empty?
@@ -330,7 +357,12 @@ module FacebookIrcGateway
   
             if description
               tokens << '/' if not message.empty?
-              tokens << description
+              des = description.split(//u)
+              if des.size > 100
+                tokens << "#{des[0, 100].join('')} ..."
+              else
+                tokens << description
+              end
             end
   
             tokens << "#{Utils.shorten_url(link)}" if link
@@ -407,15 +439,36 @@ module FacebookIrcGateway
       end
 
       if @userlist[id].nil?
-        @userlist[id] = {'name' => name, 'enable' => false}
-        open(@opts.userlist, 'w') do |f|
-          f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
-        end
+        set_name(:id => id, :name => name )
       elsif @userlist[id]['enable']
         name = @userlist[id]['name'] if @userlist[id]['name']
       end
 
       name
+    end
+
+    def set_name(options={})
+      id   = options[:id]
+      name = options[:name].gsub(/\s+/, '')
+
+      if @userlist.nil?
+        begin
+          @userlist = YAML::load_file(@opts.userlist)
+        rescue Exception => e
+          @userlist = {}
+        end
+      end
+
+      if @userlist[id].nil?
+        @userlist[id] = {'name' => name, 'enable' => false}
+      else
+        @userlist[id]['name'] = name
+        @userlist[id]['enable'] = true
+      end
+
+      open(@opts.userlist, 'w') do |f|
+        f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
+      end
     end
 
   end

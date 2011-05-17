@@ -1,5 +1,7 @@
 # Facebook Irc Gateway
 
+Japanese below
+
 ## What's That
 Facebook Client that spoof IRC server.
 
@@ -38,25 +40,9 @@ Run
 
 Have A FUN!!
 
-## Typable Map Command
+## More infomation
 
-    19:40 (shunirr) Im so sleepy. (hoge) (via web)
-
-You want to update comment this status:
-
-    re hoge lets sleep together.
-
-You want to like this status:
-
-    like hoge
-
-or 
-
-    fav hoge
-
-You want to delete just before update status:
-
-    undo
+https://github.com/shunirr/FacebookIrcGateway/wiki
 
 ## Credits
 - Project Leader:
@@ -67,7 +53,6 @@ You want to delete just before update status:
   - ラーメン二郎
 - Special thx
   - yutamoty
-
 
 ## Japanese
 ## これは何？
@@ -106,24 +91,7 @@ Bundler でセットアップします
 
 Have A FUN!!
 
-## Typable Map コマンド集
+## 更に詳しく知りたい
 
-    19:40 (shunirr) ねむい (hoge) (via web)
-
-この発言にコメントを付けたい場合:
-
-    re hoge 一緒にねよう！
-
-この発言をいいね！したい場合:
-
-    like hoge
-
-または
-
-    fav hoge
-
-直前の発言を消したい場合:
-
-    undo
-
+https://github.com/shunirr/FacebookIrcGateway/wiki/Home_ja
 
