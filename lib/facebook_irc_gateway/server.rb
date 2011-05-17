@@ -76,6 +76,7 @@ module FacebookIrcGateway
 
       @posts = []
       @channels = {}
+      @dupulications = Duplication.objects @me[:id]
     end
   
     def on_user(m)
@@ -143,7 +144,8 @@ module FacebookIrcGateway
       channel_names.each do |channel_name|
         channel_name.strip!
         next if main_channel == channel_name
-        @channels[channel_name] = Channel.new(self, channel_name)
+        channel = @channels[channel_name] = Channel.new(self, channel_name)
+        channel.on_join if channel
         post @prefix, JOIN, channel_name
       end
     end
@@ -153,7 +155,8 @@ module FacebookIrcGateway
       channel_names.each do |channel_name|
         channel_name.strip!
         next if main_channel == channel_name
-        @channels.delete(channel_name)
+        channel = @channels.delete(channel_name)
+        channel.on_part if channel
         post @prefix, PART, channel_name
       end
     end
@@ -343,9 +346,8 @@ module FacebookIrcGateway
           comments    = d['comments']['data'] if d['comments']
           likes       = d['likes']['data'] if d['likes']
 
-          if Duplication.find(:all, :conditions=>["object_id=?", id]).size <= 0
+          @dupulications.find_or_create_by_object_id id do
             tid = @timeline.push([id, d])
-            Duplication.create(:object_id => id)
   
             tokens = []
             tokens << message if message != ''
@@ -392,8 +394,7 @@ module FacebookIrcGateway
             cid   = comment['id']
             cname = get_name(:data => comment['from'])
             cmes  = comment['message']
-            if Duplication.find(:all, :conditions=>["object_id=?", cid]).size <= 0
-              Duplication.create(:object_id => cid)
+            @dupulications.find_or_create_by_object_id cid do
               ctid = @timeline.push([cid, d])
               tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{from_name}:", message]
               if comment['from']['id'] == @me[:id]
@@ -407,8 +408,7 @@ module FacebookIrcGateway
           likes.each do |like|
             lid   = "#{id}_like_#{like['id']}"
             lname = get_name(:data => like)
-            if Duplication.find(:all, :conditions=>["object_id=?", lid]).size <= 0
-              Duplication.create(:object_id => lid)
+            @dupulications.find_or_create_by_object_id lid do
               tokens = ['(like)'.irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end

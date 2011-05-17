@@ -1,4 +1,5 @@
 require 'facebook_oauth'
+require 'facebook_irc_gateway/models/duplication'
 
 module FacebookIrcGateway
   class Channel
@@ -39,8 +40,17 @@ module FacebookIrcGateway
     def notice(message, options = {})
       post 'NOTICE', options.merge(:params => [message])
     end
+
+    def object_name(item)
+      tokens = item.inject([]) do |result, (key, value)|
+        result << value if ['name', 'category'].include? key
+        result
+      end
+      tokens.join(' / ')
+    end
     # }}}
 
+    # Events {{{1
     def on_privmsg(message)
       # check object command
       command, args = message.split(/\s+/)
@@ -57,19 +67,13 @@ module FacebookIrcGateway
           if args.nil?
             # list show
             items.each_with_index do |item, index|
-              tokens = item.inject([]) do |result, (key, value)|
-                result << value if ['name', 'category'].include? key
-                result
-              end
-              @server.log.debug "tokens: #{tokens.to_s}"
-              notice "#{index + 1}: #{tokens.join(' / ')}"
+              notice "#{index + 1}: #{object_name item}"
             end
           else
             # set object
             item = items[args.to_i - 1]
             if item
-              @object = object(item['id'])
-              start
+              start item['id']
             else
               notice 'invalid argument'
             end
@@ -80,20 +84,31 @@ module FacebookIrcGateway
       end
 
       if @object
-        item = @object.feed(:create, :message => message)
+        feed_post message
         @server.log.debug item.to_s
       end
     end
 
-    def on_topic(topic)
-      @topic = topic
-      @object = object(topic)
-      start
+    def on_join
     end
+
+    def on_part
+      stop
+    end
+
+    def on_topic(topic)
+      start topic
+    end
+    # }}}
 
     private
 
-    def start
+    def start(id)
+      @object = FacebookOAuth::FacebookObject.new(id, @server.client)
+      @dupulications = Duplication.objects id
+
+      notice "bind: #{object_name @object.info}"
+
       stop
       @check_feed_thread = async do
         check_feed
@@ -109,7 +124,7 @@ module FacebookIrcGateway
     end
 
     def async(options = {})
-      @server.log.debug "begin: async"
+      @server.log.debug 'begin: async'
       count = options[:count] || 0
       interval = options[:interval] || 30
 
@@ -132,28 +147,29 @@ module FacebookIrcGateway
 
           sleep interval
         end
-        @server.log.debug "end: async"
+        @server.log.debug 'end: async'
       end
     end
 
-    def object(id)
-      FacebookOAuth::FacebookObject.new(id, @server.client)
-    end
-
-    def feed
+    def feed_get
       @object.feed['data']
     end
 
+    def feed_post message
+      @object.feed(:create, :message => message)
+    end
+
     def check_feed
-      @server.log.debug "begin: check_feed"
-      feed.reverse.each do |item|
-        #TODO: いい感じに出力する
-        #notice item.to_s
-        name = item["from"]["name"].gsub(/\s+/, '')
-        message = item["message"]
-        privmsg message, :from => name
+      @server.log.debug 'begin: check_feed'
+      feed_get.reverse.each do |item|
+        @dupulications.find_or_create_by_object_id item['id'] do
+          #TODO: いい感じに出力する
+          name = item['from']['name'].gsub(/\s+/, '')
+          message = item['message']
+          privmsg message, :from => name
+        end
       end
-      @server.log.debug "end: check_feed"
+      @server.log.debug 'end: check_feed'
     end
   end
 end
