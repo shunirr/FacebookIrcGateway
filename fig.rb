@@ -38,16 +38,16 @@ OptionParser.new do |parser|
   end
 end
 
-opts = {}
+$opts = {}
 begin
   YAML::load_file(config_path).each do |k, v|
     if k == 'color'
-      opts[k.to_sym] = {}
+      $opts[k.to_sym] = {}
       v.each do |kk,vv|
-        opts[k.to_sym][kk.to_sym] = vv.to_sym
+        $opts[k.to_sym][kk.to_sym] = vv.to_sym
       end
     else
-      opts[k.to_sym] = v
+      $opts[k.to_sym] = v
     end
   end
 rescue Exception => e
@@ -55,20 +55,29 @@ rescue Exception => e
 #  exit -1
 end
 
-opts[:host]         = '127.0.0.1'     if opts[:host].nil?
-opts[:port]         = 16822           if opts[:port].nil?
-opts[:userlist]     = 'userlist.yaml' if opts[:userlist].nil?
-opts[:autoliker]    = false           if opts[:autoliker].nil?
-opts[:color]        = {}              if opts[:color].nil?
-opts[:color][:tid]  = :teal           if opts[:color][:tid].nil?
-opts[:color][:app_name] = :teal       if opts[:color][:app_name].nil?
-opts[:color][:like] = :teal           if opts[:color][:like].nil?
-opts[:app_id]       = pit['id']
-opts[:app_secret]   = pit['secret']
-opts[:callback]     = pit['callback']
-opts[:code]         = pit['code']
-opts[:logger]       = Logger.new($stdout, 'daily')
-opts[:logger].level = Logger::DEBUG
+$opts[:host]          = '127.0.0.1'     if $opts[:host].nil?
+$opts[:port]          = 16822           if $opts[:port].nil?
+$opts[:userlist]      = 'userlist.yaml' if $opts[:userlist].nil?
+$opts[:autoliker]     = false           if $opts[:autoliker].nil?
+$opts[:color]         = {}              if $opts[:color].nil?
+$opts[:color][:tid]   = :teal           if $opts[:color][:tid].nil?
+$opts[:color][:app_name] = :teal        if $opts[:color][:app_name].nil?
+$opts[:color][:like]  = :teal           if $opts[:color][:like].nil?
+$opts[:db]            = {}              if $opts[:db].nil?
+$opts[:db][:adapter]  = 'sqlite3'       if $opts[:db][:adapter].nil?
+$opts[:db][:database] = 'data.sqlite'   if $opts[:db][:database].nil?
+$opts[:app_id]        = pit['id']
+$opts[:app_secret]    = pit['secret']
+$opts[:callback]      = pit['callback']
+$opts[:code]          = pit['code']
+$opts[:logger]        = Logger.new($stdout, 'daily')
+$opts[:logger].level  = Logger::DEBUG
 
-Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start
+begin
+  load 'migrate.rb'
+rescue Exception => e
+  load File.expand_path('migrate.rb')
+end
+
+Net::IRC::Server.new($opts[:host], $opts[:port], FacebookIrcGateway::Server, $opts).start
 

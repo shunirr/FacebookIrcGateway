@@ -1,7 +1,5 @@
 require 'rubygems'
 require 'net/irc'
-require 'sdbm'
-require 'tmpdir'
 require 'uri'
 require 'oauth'
 require 'facebook_oauth'
@@ -9,11 +7,13 @@ require 'openssl'
 require 'open-uri'
 require 'yaml'
 require 'ya2yaml'
+require 'active_record'
 
 require 'facebook_irc_gateway/channel'
 require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
 require 'facebook_irc_gateway/constants'
+require 'facebook_irc_gateway/models/duplication'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
@@ -68,6 +68,11 @@ module FacebookIrcGateway
           @log.error "\t#{l}"
         end
       end
+
+      ActiveRecord::Base.establish_connection(
+        :adapter  => @opts.db[:adapter],
+        :database => @opts.db[:database]
+      )
 
       @posts = []
       @channels = {}
@@ -314,7 +319,7 @@ module FacebookIrcGateway
   
     def check_news
       begin
-        db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
+        #db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
         @client.me.home['data'].reverse.each do |d|
           id          = d['id']
           from_id     = d['from']['id']
@@ -338,9 +343,9 @@ module FacebookIrcGateway
           comments    = d['comments']['data'] if d['comments']
           likes       = d['likes']['data'] if d['likes']
 
-          unless db.include?(id)
+          if Duplication.find(:all, :conditions=>["object_id=?", id]).size <= 0
             tid = @timeline.push([id, d])
-            db[id] = '1'
+            Duplication.create(:object_id => id)
   
             tokens = []
             tokens << message if message != ''
@@ -387,8 +392,8 @@ module FacebookIrcGateway
             cid   = comment['id']
             cname = get_name(:data => comment['from'])
             cmes  = comment['message']
-            unless db.include?(cid)
-              db[cid] = '1'
+            if Duplication.find(:all, :conditions=>["object_id=?", cid]).size <= 0
+              Duplication.create(:object_id => cid)
               ctid = @timeline.push([cid, d])
               tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{from_name}:", message]
               if comment['from']['id'] == @me[:id]
@@ -402,8 +407,8 @@ module FacebookIrcGateway
           likes.each do |like|
             lid   = "#{id}_like_#{like['id']}"
             lname = get_name(:data => like)
-            unless db.include?(lid)
-              db[lid] = '1'
+            if Duplication.find(:all, :conditions=>["object_id=?", lid]).size <= 0
+              Duplication.create(:object_id => lid)
               tokens = ['(like)'.irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
@@ -416,8 +421,6 @@ module FacebookIrcGateway
         e.backtrace.each do |l|
           @log.error "\t#{l}"
         end
-      ensure
-        db.close rescue nil
       end
     end
 

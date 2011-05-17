@@ -3,4 +3,5 @@ Gemfile.lock
 vendor/bundle
 userlist.yaml
 config.yaml
+data.sqlite
 
