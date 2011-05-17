@@ -187,7 +187,7 @@ module FacebookIrcGateway
         end
     end
 
-    def process_alias
+    def process_alias tid, mes
       if mes
         begin
           did, data = @timeline[tid]
