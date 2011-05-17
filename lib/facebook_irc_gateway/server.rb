@@ -35,6 +35,7 @@ module FacebookIrcGateway
       super
 
       begin
+        p @opts.callback
         agent = FacebookOAuth::Client.new(
           :application_id     => @opts.app_id,
           :application_secret => @opts.app_secret,
