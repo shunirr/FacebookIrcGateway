@@ -27,6 +27,17 @@ module FacebookIrcGateway
   
       return url
     end
+
+    def self.url_filter(message)
+      message.gsub(/https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+$,%#]+/){ |url|
+        u = URI( url )
+        http = Net::HTTP.new( u.host )
+        response = http.head( u.path )
+        next unless response.code.to_i == 200
+        next if response['content-type'][0..4] == "image"
+        shorten_url(url)
+      }
+    end
   end
 end
 
