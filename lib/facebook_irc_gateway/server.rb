@@ -180,6 +180,8 @@ module FacebookIrcGateway
           unlike tid
         when 're'
           reply tid, mes
+        when 'rres'
+          rres tid, mes
         else
           case message
           when 'undo'
@@ -207,6 +209,26 @@ module FacebookIrcGateway
           end
           post server_name, NOTICE, main_channel, "alias #{old_name} for #{mes}"
         end
+      end
+    end
+
+    def rres tid, count
+      did, data = @timeline[tid] 
+      return if data['comments'].nil?
+
+      begin
+        name = get_name(:data => data['from'])
+        post name, NOTICE, main_channel, data['message']
+  
+        comments = data['comments']['data']
+        comments = comments[(comments.size - count.to_i) .. comments.size] unless count.nil?
+  
+        comments.each do |comment|
+          cname = get_name(:data => comment['from'])
+          post cname, NOTICE, main_channel, comment['message']
+        end if comments
+      rescue Exception => e
+        post server_name, NOTICE, main_channel, 'Invalid TypableMap'
       end
     end
 
