@@ -380,7 +380,7 @@ module FacebookIrcGateway
                   message.gsub!(to['name'], "@#{alias_name}")
                 end
               end
-              tokens << message
+              tokens << Utils.url_filter(message)
             end
 
             if name
@@ -424,7 +424,7 @@ module FacebookIrcGateway
           comments.each do |comment|
             cid   = comment['id']
             cname = get_name(:data => comment['from'])
-            cmes  = comment['message']
+            cmes  = Utils.url_filter(comment['message'])
             @dupulications.find_or_create_by_object_id cid do
               ctid = @timeline.push([cid, d])
               tokens = [
@@ -509,7 +509,6 @@ module FacebookIrcGateway
         f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
       end
     end
-
   end
 end
 
