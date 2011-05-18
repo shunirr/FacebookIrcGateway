@@ -1,13 +1,4 @@
 
-# cm = CommandMatcher.new
-# 
-# cm.register 're' do |message|
-#   tid, mes = message.split(' ')
-#   puts mes
-# end
-#
-# cm.run 're', message'
-
 module FacebookIrcGateway
   class CommandManager
     def initialize

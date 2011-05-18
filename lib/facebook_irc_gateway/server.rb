@@ -322,11 +322,11 @@ module FacebookIrcGateway
   
     def check_news
       begin
-        #db = SDBM.open("#{Dir.tmpdir}/#{@real}_news.db", 0666)
         @client.me.home['data'].reverse.each do |d|
           id          = d['id']
           from_id     = d['from']['id']
           from_name   = get_name(:data => d['from']) || server_name
+          tos         = d['to']['data'] if d['to']
           picture     = d['picture']
           link        = d['link']
           name        = d['name']
@@ -350,7 +350,16 @@ module FacebookIrcGateway
             tid = @timeline.push([id, d])
   
             tokens = []
-            tokens << message if message != ''
+            
+            if message != ''
+              if tos
+                tos.each do |to|
+                  alias_name = get_name({:id => to['id'], :name => to['name']})
+                  message.gsub!(to['name'], "@#{alias_name}")
+                end
+              end
+              tokens << message
+            end
 
             if name
               tokens << '/' if not message.empty?
