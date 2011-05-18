@@ -63,6 +63,7 @@ $opts[:color]         = {}              if $opts[:color].nil?
 $opts[:color][:tid]   = :teal           if $opts[:color][:tid].nil?
 $opts[:color][:app_name] = :teal        if $opts[:color][:app_name].nil?
 $opts[:color][:like]  = :teal           if $opts[:color][:like].nil?
+$opts[:color][:parent_message]  = :grey if $opts[:color][:parent_message].nil?
 $opts[:db]            = {}              if $opts[:db].nil?
 $opts[:db][:adapter]  = 'sqlite3'       if $opts[:db][:adapter].nil?
 $opts[:db][:database] = 'data.sqlite'   if $opts[:db][:database].nil?

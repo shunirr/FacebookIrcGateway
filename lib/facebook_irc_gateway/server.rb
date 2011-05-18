@@ -405,7 +405,12 @@ module FacebookIrcGateway
             cmes  = comment['message']
             @dupulications.find_or_create_by_object_id cid do
               ctid = @timeline.push([cid, d])
-              tokens = [cmes, "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), '>>', "#{from_name}:", message]
+              tokens = [
+                  cmes, 
+                  "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), 
+                  ">> #{from_name}: #{message}".irc_colorize(:color => @opts.color[:parent_message])
+              ]
+
               if comment['from']['id'] == @me[:id]
                 post cname, NOTICE, main_channel, tokens.join(' ')
               else
