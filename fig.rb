@@ -68,6 +68,7 @@ $opts[:color][:parent_message]  = :grey if $opts[:color][:parent_message].nil?
 $opts[:db]            = {}              if $opts[:db].nil?
 $opts[:db][:adapter]  = 'sqlite3'       if $opts[:db][:adapter].nil?
 $opts[:db][:database] = 'data.sqlite'   if $opts[:db][:database].nil?
+$opts[:suffix]        = ''              if $opts[:suffix].nil?
 $opts[:app_id]        = pit['id']
 $opts[:app_secret]    = pit['secret']
 $opts[:callback]      = pit['callback']

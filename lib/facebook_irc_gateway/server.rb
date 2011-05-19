@@ -296,6 +296,7 @@ module FacebookIrcGateway
 
     def update_status message, channel_name
       if channel_name == main_channel
+        message += @opts.suffix
         id = @client.me.feed(:create, :message => message)['id']
         @posts.push [id, message]
       else
