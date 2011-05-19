@@ -1,0 +1,12 @@
+en:
+  server:
+    alias_0: 'alias'
+    alias_1: 'to'
+    alias_2: ' '
+    invalid_typablemap: 'Invalid TypableMap'
+    like: 'like for'
+    unlike: 'unlike for'
+    delete: 'delete: '
+    fail_update: 'Fail Update...'
+    like_mark: '(like)'
+

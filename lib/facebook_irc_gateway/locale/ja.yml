@@ -1,0 +1,13 @@
+ja:
+  server:
+    alias_0: 'ユーザ名'
+    alias_1: 'を'
+    alias_2: 'にしました'
+    invalid_typablemap: 'コマンド実行すると思った？でも残念、さやかちゃんでした！'
+    like: 'いいね！'
+    unlike: 'よくないね！'
+    delete: 'けした→'
+    fail_update: '投稿失敗'
+    like_mark: '(いいね！)'
+
+

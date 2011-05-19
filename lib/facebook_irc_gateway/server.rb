@@ -8,6 +8,7 @@ require 'open-uri'
 require 'yaml'
 require 'ya2yaml'
 require 'active_record'
+require 'i18n'
 
 require 'facebook_irc_gateway/channel'
 require 'facebook_irc_gateway/utils'
@@ -73,6 +74,9 @@ module FacebookIrcGateway
         :adapter  => @opts.db[:adapter],
         :database => @opts.db[:database]
       )
+
+      I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
+      I18n.default_locale = @opts.locale
 
       @posts = []
       @channels = {}
@@ -207,7 +211,7 @@ module FacebookIrcGateway
               end
             end if data['comments']
           end
-          post server_name, NOTICE, main_channel, "alias #{old_name} for #{mes}"
+          post server_name, NOTICE, main_channel, "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{mes} #{I18n.t('server.alias_2')}"
         end
       end
     end
@@ -228,7 +232,7 @@ module FacebookIrcGateway
           post cname, NOTICE, main_channel, comment['message']
         end if comments
       rescue Exception => e
-        post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+        post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
       end
     end
 
@@ -248,9 +252,9 @@ module FacebookIrcGateway
         end if data['comments']
       end
 
-      post server_name, NOTICE, main_channel, "like for #{name}: #{mes}"
+      post server_name, NOTICE, main_channel, "#{I18n.t('server.like')} #{name}: #{mes}"
     rescue Exception => e
-      post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+      post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
     end
 
     def unlike tid
@@ -269,9 +273,9 @@ module FacebookIrcGateway
         end if data['comments']
       end
 
-      post server_name, NOTICE, main_channel, "unlike for #{name}: #{mes}"
+      post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
     rescue Exception => e
-      post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+      post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
     end
 
     def reply tid, mes
@@ -283,7 +287,7 @@ module FacebookIrcGateway
           tmes  = data['message']
           @posts.push [id, mes]
         rescue Exception => e
-          post server_name, NOTICE, main_channel, 'Invalid TypableMap'
+          post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
         end
       end
     end
@@ -291,7 +295,7 @@ module FacebookIrcGateway
     def undo
       id, message = @posts.pop
       @client.send(:_delete, id)
-      post server_name, NOTICE, main_channel, "delete: #{message}"
+      post server_name, NOTICE, main_channel, "#{I18n.t('server.delete')}: #{message}"
     end
 
     def update_status message, channel_name
@@ -304,7 +308,7 @@ module FacebookIrcGateway
         channel.on_privmsg(message) if channel
       end
     rescue Exception => e
-      post server_name, NOTICE, main_channel, 'Fail Update...'
+      post server_name, NOTICE, main_channel, I18n.t('server.fail_update')
       @log.error "#{__FILE__}: #{__LINE__}L"
       @log.error e.inspect
       e.backtrace.each do |l|
@@ -446,7 +450,7 @@ module FacebookIrcGateway
             lid   = "#{id}_like_#{like['id']}"
             lname = get_name(:data => like)
             @dupulications.find_or_create_by_object_id lid do
-              tokens = ['(like)'.irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
+              tokens = [I18n.t('server.like_mark').irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
           end if likes and from_id == @me[:id]
