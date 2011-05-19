@@ -9,34 +9,28 @@ require 'yaml'
 require 'ya2yaml'
 require 'active_record'
 
-require 'facebook_irc_gateway/session'
 require 'facebook_irc_gateway/channel'
 require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
 require 'facebook_irc_gateway/constants'
-require 'facebook_irc_gateway/command_manager'
 require 'facebook_irc_gateway/models/duplication'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
-
-    attr_reader :client, :log, :prefix
-    public :post
-  
     def server_name
       'FacebookIrcGateway'
     end
   
     def server_version
-      '0.0.1'
+      '0.0.0'
     end
   
     def main_channel
       '#facebook'
     end
-    
+  
     def initialize(server, socket, logger, opts={})
       super
 
@@ -80,7 +74,6 @@ module FacebookIrcGateway
         :database => @opts.db[:database]
       )
 
-      @sessions = {}
       @posts = []
       @channels = {}
       @dupulications = Duplication.objects @me[:id]
@@ -88,43 +81,38 @@ module FacebookIrcGateway
   
     def on_user(m)
       super
-#      post @prefix, JOIN, main_channel
-#      post server_name, MODE, main_channel, '+o', @prefix.nick
-#  
-#      @timeline = TypableMap.new(6000, true)
-#
-#      @check_friends_thread = Thread.start do
-#        # TODO: loop
-#        begin
-#          check_friends
-#        rescue Exception => e
-#          @log.error "#{__FILE__}: #{__LINE__}L"
-#          @log.error e.inspect
-#          e.backtrace.each do |l|
-#            @log.error "\t#{l}"
-#          end
-#        end
-#      end
-
-      me = @client.me.info
-      @me_id = me['id'] # とりあえず固定
-      @sessions[me['id']] = Session.new self, me
+      post @prefix, JOIN, main_channel
+      post server_name, MODE, main_channel, '+o', @prefix.nick
   
-#      @check_news_thread = Thread.start do
-#        sleep 3
-#        while true
-#          begin
-#            check_news
-#          rescue Exception => e
-#            @log.error "#{__FILE__}: #{__LINE__}L"
-#            @log.error e.inspect
-#            e.backtrace.each do |l|
-#              @log.error "\t#{l}"
-#            end
-#          end
-#          sleep 20
-#        end
-#      end
+      @timeline = TypableMap.new(6000, true)
+      @check_friends_thread = Thread.start do
+        # TODO: loop
+        begin
+          check_friends
+        rescue Exception => e
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
+          end
+        end
+      end
+  
+      @check_news_thread = Thread.start do
+        sleep 3
+        while true
+          begin
+            check_news
+          rescue Exception => e
+            @log.error "#{__FILE__}: #{__LINE__}L"
+            @log.error e.inspect
+            e.backtrace.each do |l|
+              @log.error "\t#{l}"
+            end
+          end
+          sleep 20
+        end
+      end
     end
   
     def on_disconnected
@@ -133,7 +121,6 @@ module FacebookIrcGateway
   
     def on_privmsg(m)
       super
-      @log.debug m
       Thread.start{process_privmsg m}
     end
   
@@ -147,26 +134,40 @@ module FacebookIrcGateway
     end
 
     def on_topic(m)
-      name, topic, = m.params
-      session = @sessions[@me_id]
-      session.on_topic names if session
+      channel_name, topic, = m.params
+      channel = @channels[channel_name]
+      channel.on_topic(topic) if channel
     end
   
     def on_join(m)
-      names = m.params[0].split(/\s*,\s*/)
-      session = @sessions[@me_id]
-      session.on_join names if session
+      channel_names = m.params[0].split(',')
+      channel_names.each do |channel_name|
+        channel_name.strip!
+        next if main_channel == channel_name
+        channel = @channels[channel_name] = Channel.new(self, channel_name)
+        channel.on_join if channel
+        post @prefix, JOIN, channel_name
+      end
     end
   
     def on_part(m)
-      names = m.params[0].split(/\s*,\s*/)
-      session = @sessions[@me_id]
-      session.on_part names if session
+      channel_names = m.params[0].split(',')
+      channel_names.each do |channel_name|
+        channel_name.strip!
+        next if main_channel == channel_name
+        channel = @channels.delete(channel_name)
+        channel.on_part if channel
+        post @prefix, PART, channel_name
+      end
     end
 
+    attr :client
+    attr :log
+    public :post
+  
     private
     def process_privmsg m
-        name = m[0]
+        channel_name = m[0]
         message = m[1]
 
         command, tid, mes = message.split(' ', 3)
@@ -186,7 +187,7 @@ module FacebookIrcGateway
           when 'undo'
             undo
           else
-            update_status message, name
+            update_status message, channel_name
           end
         end
     end
@@ -293,13 +294,13 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "delete: #{message}"
     end
 
-    def update_status message, name
-      if name == main_channel
+    def update_status message, channel_name
+      if channel_name == main_channel
         id = @client.me.feed(:create, :message => message)['id']
         @posts.push [id, message]
       else
-        session = @sessions[@me_id]
-        session.on_privmsg name, message if session
+        channel = @channels[channel_name]
+        channel.on_privmsg(message) if channel
       end
     rescue Exception => e
       post server_name, NOTICE, main_channel, 'Fail Update...'
