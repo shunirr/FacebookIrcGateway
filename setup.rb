@@ -1,10 +1,9 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH << 'lib'
+$LOAD_PATH << (RUBY_VERSION > '1.9' ? './lib' : 'lib')
 require 'rubygems'
-require 'oauth'
-require 'facebook_oauth'
-require 'pit'
+require 'bundler'
+Bundler.require
 
 require 'facebook_irc_gateway/utils'
 

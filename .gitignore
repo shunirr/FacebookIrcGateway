@@ -1,4 +1,5 @@
 Gemfile.lock
+.rvmrc
 .bundle
 vendor/bundle
 userlist.yaml

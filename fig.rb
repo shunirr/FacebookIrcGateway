@@ -1,11 +1,12 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH << 'lib'
+$LOAD_PATH << (RUBY_VERSION > '1.9' ? './lib' : 'lib')
 $KCODE = 'u' unless defined? ::Encoding
 
 require 'rubygems'
-require 'net/irc'
-require 'pit'
+require 'bundler'
+Bundler.require
+
 require 'optparse'
 require 'yaml'
 
