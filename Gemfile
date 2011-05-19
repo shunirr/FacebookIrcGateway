@@ -8,3 +8,7 @@ gem "pit"
 gem "ya2yaml"
 gem "sqlite3"
 gem "activerecord"
+
+group :test do
+  gem 'rspec'
+end
