@@ -16,16 +16,18 @@ module FacebookIrcGateway
       'videos',
       'events',
       'groups',
-      'checkins']
+      'checkins'
+    ]
 
-    def initialize(server, name)
+    def initialize(server, session, name)
       @server = server
+      @session = session
       @name = name
       @topic = nil
       @object = nil
     end
 
-    # Helpers {{{1
+    # IRC methods {{{1
     def post(command, options = {})
       from = options[:from] || @server.server_name
       channel = options[:channel] || @name
@@ -40,52 +42,17 @@ module FacebookIrcGateway
     def notice(message, options = {})
       post 'NOTICE', options.merge(:params => [message])
     end
-
-    def object_name(item)
-      tokens = item.inject([]) do |result, (key, value)|
-        result << value if ['name', 'category'].include? key
-        result
-      end
-      tokens.join(' / ')
-    end
-    # }}}
+    #}}}
 
     # Events {{{1
     def on_privmsg(message)
-      # check object command
-      command, args = message.split(/\s+/)
-      @server.log.debug "command: #{[command, args].to_s}"
+      # check command
+      return if erocess_command(message)
 
-      if OBJECTS.include?(command)
-        items = @server.client.me.send(command)['data'].reverse
-        @server.log.debug "items: #{items.to_s}"
-
-        if items.empty?
-          notice 'no match found'
-          return
-        else
-          if args.nil?
-            # list show
-            items.each_with_index do |item, index|
-              notice "#{index + 1}: #{object_name item}"
-            end
-          else
-            # set object
-            item = items[args.to_i - 1]
-            if item
-              start item['id']
-            else
-              notice 'invalid argument'
-            end
-          end
-        end
-
-        return
-      end
-
-      if @object
-        feed_post message
+      if has_object?
+        update message
         @server.log.debug item.to_s
+      else
       end
     end
 
@@ -101,13 +68,26 @@ module FacebookIrcGateway
     end
     # }}}
 
+    def has_object?
+      @object.nil?
+    end
+
+    def object_name(item)
+      tokens = item.inject([]) do |result, (key, value)|
+        result << value if ['name', 'category'].include? key
+        result
+      end
+      tokens.join(' / ')
+    end
+    # }}}
+
     private
 
     def start(id)
       @object = FacebookOAuth::FacebookObject.new(id, @server.client)
       @dupulications = Duplication.objects id
 
-      notice "bind: #{object_name @object.info}"
+      notice "set: #{object_name @object.info}"
 
       stop
       @check_feed_thread = async do
@@ -151,17 +131,17 @@ module FacebookIrcGateway
       end
     end
 
-    def feed_get
+    def feed
       @object.feed['data']
     end
 
-    def feed_post message
+    def update
       @object.feed(:create, :message => message)
     end
 
     def check_feed
       @server.log.debug 'begin: check_feed'
-      feed_get.reverse.each do |item|
+      feed.reverse.each do |item|
         @dupulications.find_or_create_by_object_id item['id'] do
           #TODO: いい感じに出力する
           name = item['from']['name'].gsub(/\s+/, '')
@@ -171,6 +151,50 @@ module FacebookIrcGateway
       end
       @server.log.debug 'end: check_feed'
     end
+
+    def process_command(message)
+      command, args = message.split(/\s+/)
+      return false if not OBJECTS.include?(command)
+
+      @server.log.debug "command: #{[command, args].to_s}"
+
+      items = @server.client.me.send(command)['data'].reverse
+      @server.log.debug "items: #{items.to_s}"
+
+      if items.empty?
+        notice 'no match found'
+      else
+        if args.nil?
+          # list show
+          items.each_with_index do |item, index|
+            notice "#{index + 1}: #{object_name item}"
+          end
+        else
+          # set object
+          item = items[args.to_i - 1]
+          if item
+            start item['id']
+          else
+            notice 'invalid argument'
+          end
+        end
+      end
+
+      return true
+    end
+
   end
+
+  class MainChannel < Channel
+    def initialize(server, session, name)
+      super
+      start session.me['id']
+    end
+
+    def feed
+      @object.home['data']
+    end
+  end
+
 end
 
