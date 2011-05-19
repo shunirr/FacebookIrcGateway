@@ -47,7 +47,7 @@ module FacebookIrcGateway
     # Events {{{1
     def on_privmsg(message)
       # check command
-      return if erocess_command(message)
+      return if process_command(message)
 
       if has_object?
         update message
