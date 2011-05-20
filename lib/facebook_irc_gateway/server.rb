@@ -59,9 +59,9 @@ module FacebookIrcGateway
           :token              => @access_token.token
         )
   
-        me = @client.me.feed['data'][0]
-        @me[:id]   = me['from']['id']
-        @me[:name] = get_name(:data => me['from'])
+        me = @client.me.info
+        @me[:id]   = me['id']
+        @me[:name] = get_name(:data => me)
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
         @log.error e.inspect
