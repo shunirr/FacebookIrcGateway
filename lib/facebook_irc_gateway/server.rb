@@ -80,7 +80,7 @@ module FacebookIrcGateway
 
       @posts = []
       @channels = {}
-      @dupulications = Duplication.objects @me[:id]
+      @duplications = Duplication.objects @me[:id]
     end
   
     def on_user(m)
@@ -373,7 +373,7 @@ module FacebookIrcGateway
           comments    = d['comments']['data'] if d['comments']
           likes       = d['likes']['data'] if d['likes']
 
-          @dupulications.find_or_create_by_object_id id do
+          @duplications.find_or_create_by_object_id id do
             tid = @timeline.push([id, d])
   
             tokens = []
@@ -430,7 +430,7 @@ module FacebookIrcGateway
             cid   = comment['id']
             cname = get_name(:data => comment['from'])
             cmes  = Utils.url_filter(comment['message'])
-            @dupulications.find_or_create_by_object_id cid do
+            @duplications.find_or_create_by_object_id cid do
               ctid = @timeline.push([cid, d])
               tokens = [
                   cmes, 
@@ -449,7 +449,7 @@ module FacebookIrcGateway
           likes.each do |like|
             lid   = "#{id}_like_#{like['id']}"
             lname = get_name(:data => like)
-            @dupulications.find_or_create_by_object_id lid do
+            @duplications.find_or_create_by_object_id lid do
               tokens = [I18n.t('server.like_mark').irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
               post lname, PRIVMSG, main_channel, tokens.join(' ')
             end
