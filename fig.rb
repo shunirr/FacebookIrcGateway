@@ -67,9 +67,7 @@ $opts[:color][:tid]   = :teal           if $opts[:color][:tid].nil?
 $opts[:color][:app_name] = :teal        if $opts[:color][:app_name].nil?
 $opts[:color][:like]  = :teal           if $opts[:color][:like].nil?
 $opts[:color][:parent_message]  = :grey if $opts[:color][:parent_message].nil?
-$opts[:db]            = {}              if $opts[:db].nil?
-$opts[:db][:adapter]  = 'sqlite3'       if $opts[:db][:adapter].nil?
-$opts[:db][:database] = 'data.sqlite'   if $opts[:db][:database].nil?
+$opts[:db] = YAML.load_file('database.yml')
 $opts[:suffix]        = ''              if $opts[:suffix].nil?
 $opts[:app_id]        = pit['id']
 $opts[:app_secret]    = pit['secret']
@@ -78,11 +76,7 @@ $opts[:code]          = pit['code']
 $opts[:logger]        = Logger.new($stdout, 'daily')
 $opts[:logger].level  = Logger::DEBUG
 
-begin
-  load 'migrate.rb'
-rescue Exception => e
-  load File.expand_path('migrate.rb')
-end
+system('rake db:migrate')
 
 Net::IRC::Server.new($opts[:host], $opts[:port], FacebookIrcGateway::Server, $opts).start
 

@@ -71,8 +71,8 @@ module FacebookIrcGateway
       end
 
       ActiveRecord::Base.establish_connection(
-        :adapter  => @opts.db[:adapter],
-        :database => @opts.db[:database]
+        :adapter  => @opts.db['adapter'],
+        :database => @opts.db['database']
       )
 
       I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
