@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 require 'net/https'
 require 'json'
@@ -28,14 +29,22 @@ module FacebookIrcGateway
       return url
     end
 
+    ##
+    # 発言内容の URL を取得して短くする
+    # @param:: +message+ フィード文字列
     def self.url_filter(message)
-      message.gsub( URI.regexp ){ |url|
-        u = URI( url )
-        http = Net::HTTP.new( u.host )
-        response = http.head( u.path )
-        next url unless response.code.to_i == 200
-        next url if response['content-type'][0..4] == "image"
-        shorten_url(url)
+      message.gsub( URI.regexp(["http", "https"]) ){ |url|
+        begin
+          u = URI( url )
+          http = Net::HTTP.new( u.host )
+          response = http.head( u.path )
+          next url unless response.code.to_i == 200
+          next url if response['content-type'][0..4] == "image"
+          shorten_url(url)
+        rescue => e
+          puts e.inspect
+          url
+        end
       }
     end
   end
