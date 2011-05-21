@@ -85,7 +85,7 @@ module FacebookIrcGateway
 
     def start(id)
       @object = FacebookOAuth::FacebookObject.new(id, @server.client)
-      @dupulications = Duplication.objects id
+      @duplications = Duplication.objects(id)
 
       notice "set: #{object_name @object.info}"
 
@@ -139,13 +139,20 @@ module FacebookIrcGateway
       @object.feed(:create, :message => message)
     end
 
+    def check_duplication(id)
+      dup = @duplications.find_or_initialize_by_object_id(id)
+      new = dup.new_record?
+      dup.save
+      yield if new
+    end
+
     def check_feed
       @server.log.debug 'begin: check_feed'
       feed.reverse.each do |item|
-        @dupulications.find_or_create_by_object_id item['id'] do
+        check_duplication item['id'] do
           #TODO: いい感じに出力する
-          name = item['from']['name'].gsub(/\s+/, '')
-          message = item['message']
+          name = item['from']['name'].gsub(/\s+/, '') || ''
+          message = item['message'] || ''
           privmsg message, :from => name
         end
       end
