@@ -28,9 +28,17 @@ PERMISSIONS = [
   'publish_checkins', 'manage_friendlists', 'manage_pages'
 ]
 
+begin
+  config_yaml = YAML::load_file('config.yaml')
+rescue Exception => e
+  config_yaml = {'locale' => 'en'}
+end
+I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
+I18n.default_locale = config_yaml['locale'].to_sym
+
 config = {'app' => {}}
 
-print "Input your Application ID: (Press enter, if use default Application ID): "
+print I18n.t('setup.app_id')
 app_id = gets.chomp
 if app_id == ''
   config['app']['id']     = DEFAULT_APP_ID
@@ -40,7 +48,7 @@ else
 end
 
 unless config['app']['secret']
-  print "Input your Application Secret: "
+  print I18n.t('setup.app_secret')
   config['app']['secret'] = gets.chomp
 end
 
@@ -55,7 +63,7 @@ auth_url = client.authorize_url :scope => PERMISSIONS.join(',')
 puts "---"
 puts "#{FacebookIrcGateway::Utils.shorten_url auth_url}"
 puts "---"
-print "Please access this URL, and Allow this Application, and Paste new URL: "
+print I18n.t('setup.access_to')
 code = gets.chomp.split("code=").last
 
 Pit.set("facebook_irc_gateway", :data => {
@@ -65,4 +73,5 @@ Pit.set("facebook_irc_gateway", :data => {
   'code' => code
 })
 
-puts "Complete Setup!!"
+puts I18n.t('setup.complete')
+

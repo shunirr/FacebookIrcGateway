@@ -1,0 +1,17 @@
+en:
+  server:
+    alias_0: 'alias'
+    alias_1: 'to'
+    alias_2: ' '
+    invalid_typablemap: 'Invalid TypableMap'
+    like: 'like for'
+    unlike: 'unlike for'
+    delete: 'delete: '
+    fail_update: 'Fail Update...'
+    like_mark: '(like)'
+
+  setup:
+    app_id: "Input your Application ID: (Press enter, if use default Application ID): "
+    app_secret: "Input your Application Secret: "
+    access_to: "Please access this URL, Allow this Application, and Paste the URL of the page you are redirected to:"
+    complete: "Complete Setup!!"
