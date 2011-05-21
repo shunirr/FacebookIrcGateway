@@ -451,7 +451,7 @@ module FacebookIrcGateway
             lname = get_name(:data => like)
             @duplications.find_or_create_by_object_id lid do
               tokens = [I18n.t('server.like_mark').irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
-              post lname, PRIVMSG, main_channel, tokens.join(' ')
+              post lname, NOTICE, main_channel, tokens.join(' ')
             end
           end if likes and from_id == @me[:id]
   
