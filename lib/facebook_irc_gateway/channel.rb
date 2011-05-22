@@ -19,11 +19,12 @@ module FacebookIrcGateway
       'checkins'
     ]
 
+    attr_reader :server, :session, :name, :object
+
     def initialize(server, session, name)
       @server = server
       @session = session
       @name = name
-      @topic = nil
       @object = nil
     end
 
@@ -47,7 +48,8 @@ module FacebookIrcGateway
     # Events {{{1
     def on_privmsg(message)
       # check command
-      return if process_command(message)
+      return if process_command message
+      return if @session.command_manager.process self, message
 
       if has_object?
         status = update message

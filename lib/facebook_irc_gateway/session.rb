@@ -11,7 +11,7 @@ module FacebookIrcGateway
       @server = server
       @api = api
       @me_info = me_info
-      @command_manager = CommandManager.new
+      @command_manager = CommandManager.new(self)
       @posts = []
       @channels = {}
       @typablemap = TypableMap.new(6000, true)
