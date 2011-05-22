@@ -28,19 +28,19 @@ module FacebookIrcGateway
     end
 
     # IRC methods {{{1
-    def post(command, options = {})
-      from = options[:from] || @server.server_name
+    def send_irc_command(command, options = {})
+      from = (options[:from] || @server.server_name).gsub(/\s+/, '')
       channel = options[:channel] || @name
       params = options[:params] || []
       @server.post from, command, channel, *params
     end
 
     def privmsg(message, options = {})
-      post 'PRIVMSG', options.merge(:params => [message])
+      send_irc_command 'PRIVMSG', options.merge(:params => [message])
     end
 
     def notice(message, options = {})
-      post 'NOTICE', options.merge(:params => [message])
+      send_irc_command 'NOTICE', options.merge(:params => [message])
     end
     #}}}
 
@@ -87,7 +87,7 @@ module FacebookIrcGateway
       @object = FacebookOAuth::FacebookObject.new(id, @server.client)
       @duplications = Duplication.objects(id)
 
-      notice "set: #{object_name @object.info}"
+      notice "start: #{object_name @object.info}"
 
       stop
       @check_feed_thread = async do
@@ -135,7 +135,7 @@ module FacebookIrcGateway
       @object.feed['data']
     end
 
-    def update
+    def update(message)
       @object.feed(:create, :message => message)
     end
 
@@ -147,16 +147,82 @@ module FacebookIrcGateway
     end
 
     def check_feed
-      @server.log.debug 'begin: check_feed'
+      #@server.log.debug 'begin: check_feed'
       feed.reverse.each do |item|
-        check_duplication item['id'] do
-          #TODO: いい感じに出力する
-          name = item['from']['name'].gsub(/\s+/, '') || ''
-          message = item['message'] || ''
-          privmsg message, :from => name
+        send_message item
+      end
+      #@server.log.debug 'end: check_feed'
+    end
+
+    def send_message(item, options = {})
+      id          = item['id']
+      from_id     = item['from']['id']
+      from_name   = item['from']['name'] || server_name
+      tos         = item['to']['data'] if item['to']
+      picture     = item['picture']
+      link        = item['link']
+      name        = item['name']
+      if item['properties']
+        properties = item['properties'].map {|p| p['text'] }
+      end
+      icon        = item['icon']
+      type        = item['type']
+      object_id   = item['object_id']
+      if item['application']
+        app_id    = item['application']['id']
+        app_name  = item['application']['name'] || 'web'
+      end
+      message     = item['message'].to_s
+      caption     = item['caption']
+      description = item['description'].to_s.truncate(100)
+      comments    = item['comments'] && item['comments']['data'] || []
+      likes       = item['likes'] && item['likes']['data'] || []
+
+      check_duplication id do
+        tid = @session.typablemap.push([id, item])
+
+        msgs = []
+        msgs << message
+        msgs << name
+        msgs << caption
+        msgs << description
+
+        tokens = []
+        tokens << msgs.select { |s| !(s.nil? or s.empty?) }.join(' / ')
+        tokens << "#{Utils.shorten_url(link)}" if link
+        tokens << "(#{tid})".irc_colorize(:color => @server.opts.color[:tid]) if tid
+        tokens << "(via #{app_name})".irc_colorize(:color => @server.opts.color[:app_name])
+
+        @server.client.status(id).likes(:create) if @server.opts.autoliker == true
+        method = (from_id == @session.me[:id]) ? :notice : :privmsg
+        send method, tokens.join(' '), :from => from_name
+      end
+
+      comments.each do |comment|
+        cid   = comment['id']
+        cname = comment['from']['name']
+        cmes  = Utils.url_filter(comment['message'])
+
+        check_duplication cid do
+          ctid = @session.typablemap.push([cid, item])
+          tokens = [
+            cmes,
+            "(#{ctid})".irc_colorize(:color => @server.opts.color[:tid]),
+            ">> #{from_name}: #{message}".irc_colorize(:color => @server.opts.color[:parent_message])
+          ]
+          method = (comment['from']['id'] == @session.me[:id]) ? :notice : :privmsg
+          send method, tokens.join(' '), :from => cname
         end
       end
-      @server.log.debug 'end: check_feed'
+
+      likes.each do |like|
+        lid   = "#{id}_like_#{like['id']}"
+        lname = like['name']
+        check_duplication lid do
+          tokens = [I18n.t('server.like_mark').irc_colorize(:color => @server.opts.color[:like]), "#{from_name}: ", message]
+          notice tokens.join(' '), :from => lname
+        end
+      end
     end
 
     def process_command(message)
@@ -165,7 +231,7 @@ module FacebookIrcGateway
 
       @server.log.debug "command: #{[command, args].to_s}"
 
-      items = @server.client.me.send(command)['data'].reverse
+      items = @session.me.send(command)['data'].reverse
       @server.log.debug "items: #{items.to_s}"
 
       if items.empty?
