@@ -137,9 +137,13 @@ module FacebookIrcGateway
     end
   
     def on_privmsg(m)
-      super
-      @log.debug m
-      Thread.start{process_privmsg m}
+      name, message = m.params
+      session = find_session m
+      Thread.start { session.on_privmsg name, message } if session
+
+#      super
+#      @log.debug m
+#      Thread.start{process_privmsg m}
     end
   
     def on_ctcp(target, message)
@@ -153,23 +157,28 @@ module FacebookIrcGateway
 
     def on_topic(m)
       name, topic, = m.params
-      session = @sessions[@me_id]
+      session = find_session m
       session.on_topic names if session
     end
   
     def on_join(m)
       names = m.params[0].split(/\s*,\s*/)
-      session = @sessions[@me_id]
+      session = find_session m
       session.on_join names if session
     end
   
     def on_part(m)
       names = m.params[0].split(/\s*,\s*/)
-      session = @sessions[@me_id]
+      session = find_session m
       session.on_part names if session
     end
 
     private
+    def find_session(m)
+      # TODO: ユーザ名でセッションを切り替えたりする
+      @sessions[@me_id]
+    end
+
     def process_privmsg m
         name = m[0]
         message = m[1]

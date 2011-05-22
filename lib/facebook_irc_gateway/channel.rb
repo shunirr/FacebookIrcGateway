@@ -50,9 +50,7 @@ module FacebookIrcGateway
       return if process_command(message)
 
       if has_object?
-        update message
-        @server.log.debug item.to_s
-      else
+        status = update message
       end
     end
 
@@ -69,7 +67,7 @@ module FacebookIrcGateway
     # }}}
 
     def has_object?
-      @object.nil?
+      not @object.nil?
     end
 
     def object_name(item)
