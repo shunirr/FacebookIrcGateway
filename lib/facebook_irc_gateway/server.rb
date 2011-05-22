@@ -24,6 +24,7 @@ module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
 
     attr_reader :client, :log, :prefix
+    attr_reader :opts # 設定を細かくして session に移すべき
     public :post
   
     def server_name
