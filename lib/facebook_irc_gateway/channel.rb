@@ -73,18 +73,16 @@ module FacebookIrcGateway
     end
 
     def object_name(item)
-      tokens = item.inject([]) do |result, (key, value)|
-        result << value if ['name', 'category'].include? key
-        result
-      end
-      tokens.join(' / ')
+      item.inject([]) do |result, (key, value)|
+        result << value if ['name', 'category'].include? key; result
+      end.join(' / ')
     end
     # }}}
 
     private
 
     def start(id)
-      @object = FacebookOAuth::FacebookObject.new(id, @server.client)
+      @object = FacebookOAuth::FacebookObject.new(id, @session.api)
       @duplications = Duplication.objects(id)
 
       notice "start: #{object_name @object.info}"
@@ -193,8 +191,8 @@ module FacebookIrcGateway
         tokens << "(#{tid})".irc_colorize(:color => @server.opts.color[:tid]) if tid
         tokens << "(via #{app_name})".irc_colorize(:color => @server.opts.color[:app_name])
 
-        @server.client.status(id).likes(:create) if @server.opts.autoliker == true
-        method = (from_id == @session.me[:id]) ? :notice : :privmsg
+        @session.api.status(id).likes(:create) if @server.opts.autoliker == true
+        method = (from_id == @session.me_info['id']) ? :notice : :privmsg
         send method, tokens.join(' '), :from => from_name
       end
 
@@ -210,7 +208,7 @@ module FacebookIrcGateway
             "(#{ctid})".irc_colorize(:color => @server.opts.color[:tid]),
             ">> #{from_name}: #{message}".irc_colorize(:color => @server.opts.color[:parent_message])
           ]
-          method = (comment['from']['id'] == @session.me[:id]) ? :notice : :privmsg
+          method = (comment['from']['id'] == @session.me_info['id']) ? :notice : :privmsg
           send method, tokens.join(' '), :from => cname
         end
       end
@@ -231,7 +229,7 @@ module FacebookIrcGateway
 
       @server.log.debug "command: #{[command, args].to_s}"
 
-      items = @session.me.send(command)['data'].reverse
+      items = @session.api.me.send(command)['data'].reverse
       @server.log.debug "items: #{items.to_s}"
 
       if items.empty?
@@ -255,13 +253,13 @@ module FacebookIrcGateway
 
       return true
     end
-
   end
 
   class MainChannel < Channel
     def initialize(server, session, name)
       super
-      start session.me['id']
+      # News feed を購読開始
+      start @session.me_info['id']
     end
 
     def feed

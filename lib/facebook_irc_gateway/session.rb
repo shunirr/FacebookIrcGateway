@@ -4,12 +4,13 @@ require 'facebook_irc_gateway/command_manager'
 
 module FacebookIrcGateway
   class Session
-    attr_reader :server, :me, :command_manager
+    attr_reader :server, :api, :me_info, :command_manager
     attr_reader :posts, :typablemap, :channels
 
-    def initialize(server, me)
+    def initialize(server, api, me_info)
       @server = server
-      @me = me
+      @api = api
+      @me_info = me_info
       @command_manager = CommandManager.new
       @posts = []
       @channels = {}

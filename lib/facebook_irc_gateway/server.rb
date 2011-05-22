@@ -23,7 +23,7 @@ OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
 
-    attr_reader :client, :log, :prefix
+    attr_reader :log, :prefix
     attr_reader :opts # 設定を細かくして session に移すべき
     public :post
   
@@ -111,9 +111,9 @@ module FacebookIrcGateway
 #        end
 #      end
 
-      me = @client.me.info
-      @me_id = me['id'] # とりあえず固定
-      @sessions[me['id']] = Session.new self, me
+      me_info = @client.me.info
+      @me_id = me_info['id'] # とりあえず固定
+      @sessions[@me_id] = Session.new self, @client, me_info
   
 #      @check_news_thread = Thread.start do
 #        sleep 3
