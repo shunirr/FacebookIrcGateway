@@ -22,7 +22,7 @@ module FacebookIrcGateway
     end
 
     def to_s(options = {})
-      @color = options[:color]
+      @color = options[:color] || {}
 
       tokens = message_build
 
@@ -48,7 +48,7 @@ module FacebookIrcGateway
       @from = User.new(@from['id'], @from['name']) if @from
       @type = @type.to_sym if @type
  
-      if @comments and @comments == Hash
+      if @comments
         comments = []
         @comments['data'].each do |comment|
           comments << Comment.new(self, comment)
@@ -56,7 +56,7 @@ module FacebookIrcGateway
         @comments = comments
       end
 
-      if @likes and @likes == Hash
+      if @likes
         likes = []
         @likes['data'].each do |like|
           likes << Like.new(self, like)
@@ -99,8 +99,8 @@ module FacebookIrcGateway
     def to_s(options = {})
       tokens = []
 
-      color = options[:color]
-      tokens << '(like)'.irc_colorize(:color => color[:like]) if color[:like]
+      color = options[:color] || {}
+      tokens << '(like)'.irc_colorize(:color => color[:like])
 
       tokens << @parent.to_s
       tokens.join(' ')
@@ -122,8 +122,9 @@ module FacebookIrcGateway
     def to_s(options = {})
       tokens = message_build
 
-      color = options[:color]
-      tokens << "(#{options[:tid]})".irc_colorize(:color => @color[:tid]) if options[:tid]
+      color = options[:color] || {}
+      tokens << "(#{options[:tid]})".irc_colorize(:color => color[:tid]) if color[:tid]
+      tokens << '>>'.to_s.irc_colorize(:color => color[:parent_message])
       tokens << @parent.to_s.irc_colorize(:color => color[:parent_message])
 
       tokens.join(' ')
