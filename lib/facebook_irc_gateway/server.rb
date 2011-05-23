@@ -384,7 +384,7 @@ module FacebookIrcGateway
 
           feed.comments.each do |comment|
             @duplications.find_or_create_by_object_id comment.id do
-              ctid = @timeline.push([comment.id, comment])
+              ctid = @timeline.push([comment.id, feed])
               cmode = PRIVMSG
               cmode = NOTICE if comment.from.id == @me[:id]
               cname = get_name(:name => comment.from.name, :id => comment.from.id)
