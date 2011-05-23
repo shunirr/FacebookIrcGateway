@@ -201,7 +201,7 @@ module FacebookIrcGateway
       if mes
         begin
           did, data = @timeline[tid]
-          if data['id'] == did
+          if data.id == did
             old_name = get_name(:id => data.from.id, :name => data.from.name)
             set_name(:id => data.from.id, :name => mes)
           else
