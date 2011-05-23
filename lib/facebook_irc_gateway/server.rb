@@ -212,7 +212,16 @@ module FacebookIrcGateway
               end
             end
           end
+
           post server_name, NOTICE, main_channel, "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{mes} #{I18n.t('server.alias_2')}"
+
+        rescue Exception => e
+          post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
+          end
         end
       end
     end
