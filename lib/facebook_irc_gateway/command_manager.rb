@@ -25,7 +25,9 @@ module FacebookIrcGateway
       commands = @command_map[name] || []
       if not commands.empty?
         id, status = @session.typablemap[tid]
-        commands.each do |block, options|
+        commands.each do |command|
+          block = command[:block]
+          options = command[:options]
           next if tid.nil? and options[:tid]
           block.call :id => id, :status => status, :tid => tid, :args => args, :channel => channel, :session => @session
           cancel = true
