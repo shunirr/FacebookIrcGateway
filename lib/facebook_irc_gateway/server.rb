@@ -380,24 +380,24 @@ module FacebookIrcGateway
             name = get_name(:name => feed.from.name, :id => feed.from.id)
 
             post name, mode, main_channel, feed.to_s(:tid => tid, :color => @opts.color)
-
-            feed.comments.each do |comment|
-              @duplications.find_or_create_by_object_id comment.id do
-                ctid = @timeline.push([comment.id, comment])
-                cmode = PRIVMSG
-                cmode = NOTICE if comment.from.id == @me[:id]
-                cname = get_name(:name => comment.from.name, :id => comment.from.id)
-                post cname, cmode, main_channel, comment.to_s(:tid => ctid, :color => @opts.color)
-              end
-            end
-
-            feed.likes.each do |like|
-              @duplications.find_or_create_by_object_id like.from.id do
-                lname = get_name(:name => like.from.name, :id => like.from.id)
-                post lname, NOTICE, main_channel, like.to_s(:color => @opts.color)
-              end
-            end if feed.from.id == @me[:id]
           end
+
+          feed.comments.each do |comment|
+            @duplications.find_or_create_by_object_id comment.id do
+              ctid = @timeline.push([comment.id, comment])
+              cmode = PRIVMSG
+              cmode = NOTICE if comment.from.id == @me[:id]
+              cname = get_name(:name => comment.from.name, :id => comment.from.id)
+              post cname, cmode, main_channel, comment.to_s(:tid => ctid, :color => @opts.color)
+            end
+          end
+
+          feed.likes.each do |like|
+            @duplications.find_or_create_by_object_id like.from.id do
+              lname = get_name(:name => like.from.name, :id => like.from.id)
+              post lname, NOTICE, main_channel, like.to_s(:color => @opts.color)
+            end
+          end if feed.from.id == @me[:id]
         end
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
