@@ -95,6 +95,15 @@ class String
       return "\x03#{color},#{background}#{self}\x03"
     end
   end
+
+  def truncate(size, suffix = ' ...')
+    splited = self.split(//u)
+    if splited.size > size
+      return splited[0, size].join + suffix
+    else
+      return self
+    end
+  end
 end
 
 class Object

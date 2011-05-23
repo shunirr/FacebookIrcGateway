@@ -15,6 +15,7 @@ require 'facebook_irc_gateway/utils'
 require 'facebook_irc_gateway/typable_map'
 require 'facebook_irc_gateway/constants'
 require 'facebook_irc_gateway/models/duplication'
+require 'facebook_irc_gateway/feed'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
@@ -349,112 +350,33 @@ module FacebookIrcGateway
   
     def check_news
       begin
-        @client.me.home['data'].reverse.each do |d|
-          id          = d['id']
-          from_id     = d['from']['id']
-          from_name   = get_name(:data => d['from']) || server_name
-          tos         = d['to']['data'] if d['to']
-          picture     = d['picture']
-          link        = d['link']
-          name        = d['name']
-          if d['properties']
-            properties = d['properties'].map {|p| p['text'] }
-          end
-          icon        = d['icon']
-          type        = d['type']
-          object_id   = d['object_id']
-          if d['application']
-            app_id    = d['application']['id']
-            app_name  = d['application']['name']
-          end
-          message     = d['message'] || ''
-          caption     = d['caption']
-          description = d['description']
-          comments    = d['comments']['data'] if d['comments']
-          likes       = d['likes']['data'] if d['likes']
+        feeds = Feeds.new(@client.me.home)
+        feeds.each do |feed|
+          @duplications.find_or_create_by_object_id feed.id do
+            tid = @timeline.push([feed.id, feed])
 
-          @duplications.find_or_create_by_object_id id do
-            tid = @timeline.push([id, d])
-  
-            tokens = []
-            
-            if message != ''
-              if tos
-                tos.each do |to|
-                  alias_name = get_name({:id => to['id'], :name => to['name']})
-                  message.gsub!(to['name'], "@#{alias_name}")
-                end
+            @client.status(feed.id).likes(:create) if @opts.autoliker == true
+
+            mode = PRIVMSG
+            mode = NOTICE if feed.from.id == @me[:id]
+
+            post feed.from.name, mode, main_channel, feed.to_s(:tid => tid, :color => @opts.color)
+
+            feed.comments.each do |comment|
+              @duplications.find_or_create_by_object_id comment.id do
+                ctid = @timeline.push([comment.id, comment])
+                cmode = PRIVMSG
+                cmode = NOTICE if comment.from.id == @me[:id]
+                post comment.from.name, cmode, main_channel, comment.to_s(:tid => ctid, :color => @opts.color)
               end
-              tokens << Utils.url_filter(message)
-            end
+            end if feed.comments
 
-            if name
-              tokens << '/' if not message.empty?
-              tokens << name
-            end
-
-            if caption
-              tokens << '/' if not message.empty?
-              tokens << caption
-            end
-  
-            if description
-              tokens << '/' if not message.empty?
-              des = description.split(//u)
-              if des.size > 100
-                tokens << "#{des[0, 100].join('')} ..."
-              else
-                tokens << description
+            feed.likes.each do |like|
+              @duplications.find_or_create_by_object_id like.from.id do
+                post like.from.name, NOTICE, main_channel, like.to_s(:color => @opts.color)
               end
-            end
-  
-            tokens << "#{Utils.shorten_url(link)}" if link
-            tokens << "(#{tid})".irc_colorize(:color => @opts.color[:tid]) if tid
-  
-            if app_name
-              tokens << "(via #{app_name})".irc_colorize(:color => @opts.color[:app_name])
-            else
-              tokens << '(via web)'.irc_colorize(:color => @opts.color[:app_name])
-            end
-
-            @client.status(id).likes(:create) if @opts.autoliker == true
-  
-            if from_id == @me[:id]
-              post from_name, NOTICE, main_channel, tokens.join(' ')
-            else
-              post from_name, PRIVMSG, main_channel, tokens.join(' ')
-            end
+            end if feed.likes and feed.from.id == @me[:id]
           end
-  
-          comments.each do |comment|
-            cid   = comment['id']
-            cname = get_name(:data => comment['from'])
-            cmes  = Utils.url_filter(comment['message'])
-            @duplications.find_or_create_by_object_id cid do
-              ctid = @timeline.push([cid, d])
-              tokens = [
-                  cmes, 
-                  "(#{ctid})".irc_colorize(:color => @opts.color[:tid]), 
-                  ">> #{from_name}: #{message}".irc_colorize(:color => @opts.color[:parent_message])
-              ]
-
-              if comment['from']['id'] == @me[:id]
-                post cname, NOTICE, main_channel, tokens.join(' ')
-              else
-                post cname, PRIVMSG, main_channel, tokens.join(' ')
-              end
-            end
-          end if comments
-
-          likes.each do |like|
-            lid   = "#{id}_like_#{like['id']}"
-            lname = get_name(:data => like)
-            @duplications.find_or_create_by_object_id lid do
-              tokens = [I18n.t('server.like_mark').irc_colorize(:color => @opts.color[:like]), "#{from_name}: ", message]
-              post lname, NOTICE, main_channel, tokens.join(' ')
-            end
-          end if likes and from_id == @me[:id]
-  
         end
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
