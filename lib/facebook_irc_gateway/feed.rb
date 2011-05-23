@@ -8,56 +8,6 @@ module FacebookIrcGateway
       @id   = id
       @name = name.gsub(/\s+/, '')
     end
-
-    def get_name(options={})
-      if options[:data]
-        id   = options[:data]['id']
-        name = options[:data]['name'].gsub(/\s+/, '')
-      else
-        id   = options[:id]
-        name = options[:name].gsub(/\s+/, '')
-      end
-
-      if @userlist.nil?
-        begin
-          @userlist = YAML::load_file(@opts.userlist)
-        rescue Exception => e
-          @userlist = {}
-        end
-      end
-
-      if @userlist[id].nil?
-        set_name(:id => id, :name => name )
-      elsif @userlist[id]['enable']
-        name = @userlist[id]['name'] if @userlist[id]['name']
-      end
-
-      name
-    end
-
-    def set_name(options={})
-      id   = options[:id]
-      name = options[:name].gsub(/\s+/, '')
-
-      if @userlist.nil?
-        begin
-          @userlist = YAML::load_file(@opts.userlist)
-        rescue Exception => e
-          @userlist = {}
-        end
-      end
-
-      if @userlist[id].nil?
-        @userlist[id] = {'name' => name, 'enable' => false}
-      else
-        @userlist[id]['name'] = name
-        @userlist[id]['enable'] = true
-      end
-
-      open(@opts.userlist, 'w') do |f|
-        f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
-      end
-    end
   end
 
   class Feed
@@ -99,7 +49,7 @@ module FacebookIrcGateway
       @type = @type.to_sym if @type
  
       comments = []
-      if @comments
+      if @comments and @comments.class == Hash
         @comments['data'].each do |comment|
           comments << Comment.new(self, comment)
         end
@@ -107,7 +57,7 @@ module FacebookIrcGateway
       @comments = comments
 
       likes = []
-      if @likes
+      if @likes and @likes.class == Hash
         @likes['data'].each do |like|
           likes << Like.new(self, like)
         end
