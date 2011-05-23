@@ -89,7 +89,7 @@ module FacebookIrcGateway
       post @prefix, JOIN, main_channel
       post server_name, MODE, main_channel, '+o', @prefix.nick
   
-      @timeline = TypableMap.new(6000, true)
+      @timeline = TypableMap.new(50 * 50, true)
       @check_friends_thread = Thread.start do
         # TODO: loop
         begin
@@ -202,15 +202,15 @@ module FacebookIrcGateway
         begin
           did, data = @timeline[tid]
           if data['id'] == did
-            old_name = get_name( :data => data['from'] )
-            set_name(:id => data['from']['id'], :name => mes )
+            old_name = get_name(:id => data.from.id, :name => data.from.name)
+            set_name(:id => data.from.id, :name => mes)
           else
-            data['comments']['data'].each do |comment|
-              if comment['id'] == did
-              old_name = get_name( :data => comment['from'] )
-                set_name(:id => comment['from']['id'], :name => mes )
+            data.comments.each do |comment|
+              if comment.id == did
+                old_name = get_name(:id => comment.from.id, :name => comment.from.name)
+                set_name(:id => comment.from.id, :name => mes)
               end
-            end if data['comments']
+            end
           end
           post server_name, NOTICE, main_channel, "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{mes} #{I18n.t('server.alias_2')}"
         end
@@ -219,18 +219,18 @@ module FacebookIrcGateway
 
     def rres tid, count
       did, data = @timeline[tid] 
-      return if data['comments'].nil?
+      return if data.comments.empty?
 
       begin
-        name = get_name(:data => data['from'])
-        post name, NOTICE, main_channel, data['message']
+        name = get_name(:id => data.from.id, :name => data.from.name)
+        post name, NOTICE, main_channel, data.message
   
-        comments = data['comments']['data']
+        comments = data.comments
         comments = comments[(comments.size - count.to_i) .. comments.size] unless count.nil?
   
         comments.each do |comment|
-          cname = get_name(:data => comment['from'])
-          post cname, NOTICE, main_channel, comment['message']
+          cname = get_name(:id => comment.from.id, :name => comment.from.name)
+          post cname, NOTICE, main_channel, comment.message
         end if comments
       rescue Exception => e
         post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
@@ -241,16 +241,16 @@ module FacebookIrcGateway
       did, data = @timeline[tid] 
       @client.status(did).likes(:create)
 
-      if data['id'] == did
-        mes  = data['message']
-        name = get_name(:data => data['from'])
+      if data.id == did
+        mes  = data.message
+        name = get_name(:id => data.from.id, :name => data.from.name)
       else
-        data['comments']['data'].each do |comment|
-          if comment['id'] == did
-            mes  = comment['message']
-            name = get_name(:data => comment['from'])
+        data.comments.each do |comment|
+          if comment.id == did
+            mes  = comment.message
+            name = get_name(:id => comment.from.id, :name => comment.from.name)
           end
-        end if data['comments']
+        end
       end
 
       post server_name, NOTICE, main_channel, "#{I18n.t('server.like')} #{name}: #{mes}"
@@ -262,16 +262,16 @@ module FacebookIrcGateway
       did, data = @timeline[tid] 
       @client.send(:_delete, "#{did}/likes")
 
-      if data['id'] == did
-        mes  = data['message']
-        name = get_name(:data => data['from'])
+      if data.idid == did
+        mes  = data.message
+        name = get_name(:id => data.from.id, :name => data.from.name)
       else
-        data['comments']['data'].each do |comment|
-          if comment['id'] == did
-            mes  = comment['message']
-            name = get_name(:data => comment['from'])
+        data.comments.each do |comment|
+          if comment.id == did
+            mes  = comment.message
+            name = get_name(:id => comment.from.id, :name => comment.from.name)
           end
-        end if data['comments']
+        end
       end
 
       post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
@@ -283,9 +283,7 @@ module FacebookIrcGateway
       if mes
         begin
           did, data = @timeline[tid] 
-          id = @client.status(data['id']).comments(:create, :message => mes)['id']
-          tname = get_name(:data => data['from'])
-          tmes  = data['message']
+          id = @client.status(data.id).comments(:create, :message => mes)['id']
           @posts.push [id, mes]
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
@@ -359,23 +357,26 @@ module FacebookIrcGateway
 
             mode = PRIVMSG
             mode = NOTICE if feed.from.id == @me[:id]
+            name = get_name(:name => feed.from.name, :id => feed.from.id)
 
-            post feed.from.name, mode, main_channel, feed.to_s(:tid => tid, :color => @opts.color)
+            post name, mode, main_channel, feed.to_s(:tid => tid, :color => @opts.color)
 
             feed.comments.each do |comment|
               @duplications.find_or_create_by_object_id comment.id do
                 ctid = @timeline.push([comment.id, comment])
                 cmode = PRIVMSG
                 cmode = NOTICE if comment.from.id == @me[:id]
-                post comment.from.name, cmode, main_channel, comment.to_s(:tid => ctid, :color => @opts.color)
+                cname = get_name(:name => comment.from.name, :id => comment.from.id)
+                post cname, cmode, main_channel, comment.to_s(:tid => ctid, :color => @opts.color)
               end
-            end if feed.comments
+            end
 
             feed.likes.each do |like|
               @duplications.find_or_create_by_object_id like.from.id do
-                post like.from.name, NOTICE, main_channel, like.to_s(:color => @opts.color)
+                lname = get_name(:name => like.from.name, :id => like.from.id)
+                post lname, NOTICE, main_channel, like.to_s(:color => @opts.color)
               end
-            end if feed.likes and feed.from.id == @me[:id]
+            end if feed.from.id == @me[:id]
           end
         end
       rescue Exception => e
