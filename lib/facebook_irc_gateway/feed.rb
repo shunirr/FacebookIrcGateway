@@ -126,7 +126,7 @@ module FacebookIrcGateway
 
       color = options[:color] || {}
       tokens << "(#{options[:tid]})".irc_colorize(:color => color[:tid]) if color[:tid]
-      tokens << '>>'.to_s.irc_colorize(:color => color[:parent_message])
+      tokens << ">> #{@parent.from.name}:".to_s.irc_colorize(:color => color[:parent_message])
       tokens << @parent.to_s.irc_colorize(:color => color[:parent_message])
 
       tokens.join(' ')
