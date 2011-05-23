@@ -234,6 +234,11 @@ module FacebookIrcGateway
         end if comments
       rescue Exception => e
         post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+        @log.error "#{__FILE__}: #{__LINE__}L"
+        @log.error e.inspect
+        e.backtrace.each do |l|
+          @log.error "\t#{l}"
+        end
       end
     end
 
@@ -256,13 +261,18 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.like')} #{name}: #{mes}"
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+      @log.error "#{__FILE__}: #{__LINE__}L"
+      @log.error e.inspect
+      e.backtrace.each do |l|
+        @log.error "\t#{l}"
+      end
     end
 
     def unlike tid
       did, data = @timeline[tid] 
       @client.send(:_delete, "#{did}/likes")
 
-      if data.idid == did
+      if data.id == did
         mes  = data.message
         name = get_name(:id => data.from.id, :name => data.from.name)
       else
@@ -277,6 +287,11 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+      @log.error "#{__FILE__}: #{__LINE__}L"
+      @log.error e.inspect
+      e.backtrace.each do |l|
+        @log.error "\t#{l}"
+      end
     end
 
     def reply tid, mes
@@ -287,6 +302,11 @@ module FacebookIrcGateway
           @posts.push [id, mes]
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
+          end
         end
       end
     end

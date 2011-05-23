@@ -16,6 +16,7 @@ module FacebookIrcGateway
     attr :comments
     attr :likes
     attr :from
+    attr :message
 
     def initialize(data)
       parse data
