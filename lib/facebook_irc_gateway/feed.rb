@@ -1,5 +1,3 @@
-require 'facebook_irc_gateway/utils'
-
 module FacebookIrcGateway
   class User
     attr :id
