@@ -45,10 +45,7 @@ module FacebookIrcGateway
         )
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
   
       @me = {}
@@ -65,10 +62,7 @@ module FacebookIrcGateway
         @me[:name] = get_name(:data => me)
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
 
       ActiveRecord::Base.establish_connection(
@@ -96,10 +90,7 @@ module FacebookIrcGateway
           check_friends
         rescue Exception => e
           @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
+          error_messages(e)
         end
       end
   
@@ -110,10 +101,7 @@ module FacebookIrcGateway
             check_news
           rescue Exception => e
             @log.error "#{__FILE__}: #{__LINE__}L"
-            @log.error e.inspect
-            e.backtrace.each do |l|
-              @log.error "\t#{l}"
-            end
+            error_messages(e)
           end
           sleep 20
         end
@@ -219,10 +207,7 @@ module FacebookIrcGateway
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
           @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
+          error_messages(e)
         end
       end
     end
@@ -245,10 +230,7 @@ module FacebookIrcGateway
       rescue Exception => e
         post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
         @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
     end
 
@@ -272,10 +254,7 @@ module FacebookIrcGateway
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
       @log.error "#{__FILE__}: #{__LINE__}L"
-      @log.error e.inspect
-      e.backtrace.each do |l|
-        @log.error "\t#{l}"
-      end
+      error_messages(e)
     end
 
     def unlike tid
@@ -298,10 +277,7 @@ module FacebookIrcGateway
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
       @log.error "#{__FILE__}: #{__LINE__}L"
-      @log.error e.inspect
-      e.backtrace.each do |l|
-        @log.error "\t#{l}"
-      end
+      error_messages(e)
     end
 
     def reply tid, mes
@@ -313,10 +289,7 @@ module FacebookIrcGateway
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
           @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
+          error_messages(e)
         end
       end
     end
@@ -339,10 +312,7 @@ module FacebookIrcGateway
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.fail_update')
       @log.error "#{__FILE__}: #{__LINE__}L"
-      @log.error e.inspect
-      e.backtrace.each do |l|
-        @log.error "\t#{l}"
-      end
+      error_messages(e)
     end
 
     def check_friends
@@ -411,10 +381,7 @@ module FacebookIrcGateway
         end
       rescue Exception => e
         @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
     end
 
@@ -465,6 +432,27 @@ module FacebookIrcGateway
 
       open(@opts.userlist, 'w') do |f|
         f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
+      end
+    end
+    
+    def error_messages(e)
+      error_notice(e)
+      @log.error e.inspect
+      e.backtrace.each do |l|
+        @log.error "\t#{l}"
+      end
+    end
+    
+    def error_notice(e)
+      case e
+      when OAuth2::HTTPError
+        post server_name, NOTICE, main_channel, "The token which you use might be old. Please carry out setup.rb again."
+      when NoMethodError
+        if e.to_s =~ /undefined\smethod\s.me.\sfor\snil:NilClass/
+          post server_name, NOTICE, main_channel, "I cannot correct the certification. Please reboot fig.rb."
+        end
+      when SocketError
+        post server_name, NOTICE, main_channel, "I cannot be connected to the network. Please confirm environment of the Internet."
       end
     end
   end
