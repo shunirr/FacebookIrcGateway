@@ -176,6 +176,7 @@ module FacebookIrcGateway
         message = m[1]
 
         command, tid, mes = message.split(' ', 3)
+        tid = tid.downcase
         case command.downcase
         when 'like', 'fav', 'arr'
           like tid
