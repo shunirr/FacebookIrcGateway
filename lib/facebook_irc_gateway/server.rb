@@ -1,21 +1,10 @@
 require 'rubygems'
-require 'net/irc'
 require 'uri'
 require 'oauth'
-require 'facebook_oauth'
 require 'openssl'
 require 'open-uri'
 require 'yaml'
-require 'ya2yaml'
-require 'active_record'
 require 'i18n'
-
-require 'facebook_irc_gateway/channel'
-require 'facebook_irc_gateway/utils'
-require 'facebook_irc_gateway/typable_map'
-require 'facebook_irc_gateway/constants'
-require 'facebook_irc_gateway/models/duplication'
-require 'facebook_irc_gateway/feed'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 

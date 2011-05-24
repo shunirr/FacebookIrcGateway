@@ -6,9 +6,9 @@ $KCODE = 'u' unless defined? ::Encoding
 require 'rubygems'
 require 'bundler'
 Bundler.require
-
 require 'optparse'
 require 'yaml'
+require 'logger'
 
 require 'facebook_irc_gateway'
 
