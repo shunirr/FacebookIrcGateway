@@ -50,7 +50,6 @@ module FacebookIrcGateway
       # check command
       return if process_command message
       return if @session.command_manager.process self, message
-
       if has_object?
         status = update message
       end
@@ -64,7 +63,7 @@ module FacebookIrcGateway
     end
 
     def on_topic(topic)
-      start topic
+      #start topic
     end
     # }}}
 
@@ -79,13 +78,11 @@ module FacebookIrcGateway
     end
     # }}}
 
-    private
-
     def start(id)
       @object = FacebookOAuth::FacebookObject.new(id, @session.api)
       @duplications = Duplication.objects(id)
 
-      notice "start: #{object_name @object.info}"
+      notice "start: #{object_name @object.info} (#{id})"
 
       stop
       @check_feed_thread = async do
@@ -100,6 +97,16 @@ module FacebookIrcGateway
         @check_feed_thread = nil
       end
     end
+
+    def feed
+      @object.feed['data']
+    end
+
+    def update(message)
+      @object.feed(:create, :message => message)
+    end
+
+    private
 
     def async(options = {})
       @server.log.debug 'begin: async'
@@ -127,14 +134,6 @@ module FacebookIrcGateway
         end
         @server.log.debug 'end: async'
       end
-    end
-
-    def feed
-      @object.feed['data']
-    end
-
-    def update(message)
-      @object.feed(:create, :message => message)
     end
 
     def check_duplication(id)
@@ -256,12 +255,6 @@ module FacebookIrcGateway
   end
 
   class MainChannel < Channel
-    def initialize(server, session, name)
-      super
-      # News feed を購読開始
-      start @session.me_info['id']
-    end
-
     def feed
       @object.home['data']
     end

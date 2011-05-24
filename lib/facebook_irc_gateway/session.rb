@@ -16,7 +16,9 @@ module FacebookIrcGateway
       @channels = {}
       @typablemap = TypableMap.new(6000, true)
 
-      join @server.main_channel, :type => MainChannel
+      # join newsfeed
+      newsfeed = join @server.main_channel, :type => MainChannel
+      newsfeed.start 'me' if newsfeed
     end
 
 
@@ -26,6 +28,7 @@ module FacebookIrcGateway
       channel.on_join if channel
       @server.post @server.prefix, 'JOIN', name
       @server.post @server.server_name, 'MODE', name, '+o', @server.prefix.nick
+      channel
     end
 
     def part(name)
@@ -33,6 +36,7 @@ module FacebookIrcGateway
       channel = @channels.delete(name)
       channel.on_part if channel
       @server.post @server.prefix, 'PART', name
+      channel
     end
 
 

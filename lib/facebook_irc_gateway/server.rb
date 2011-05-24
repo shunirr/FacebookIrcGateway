@@ -139,7 +139,17 @@ module FacebookIrcGateway
     def on_privmsg(m)
       name, message = m.params
       session = find_session m
-      Thread.start { session.on_privmsg name, message } if session
+      Thread.start do
+        begin
+          session.on_privmsg name, message
+        rescue Exception => e
+          @log.error "#{__FILE__}: #{__LINE__}L"
+          @log.error e.inspect
+          e.backtrace.each do |l|
+            @log.error "\t#{l}"
+          end
+        end
+      end if session
 
 #      super
 #      @log.debug m
