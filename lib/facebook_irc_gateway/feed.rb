@@ -51,16 +51,20 @@ module FacebookIrcGateway
  
       comments = []
       if @comments and @comments.class == Hash
-        @comments['data'].each do |comment|
-          comments << Comment.new(self, comment)
+        if @comments['data'] and @comments['data'].class == Array
+          @comments['data'].each do |comment|
+            comments << Comment.new(self, comment)
+          end
         end
       end
       @comments = comments
 
       likes = []
       if @likes and @likes.class == Hash
-        @likes['data'].each do |like|
-          likes << Like.new(self, like)
+        if @likes['data'] and @likes['data'].class == Array
+          @likes['data'].each do |like|
+            likes << Like.new(self, like)
+          end
         end
       end
       @likes = likes
