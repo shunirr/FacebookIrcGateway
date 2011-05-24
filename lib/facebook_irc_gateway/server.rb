@@ -38,6 +38,10 @@ module FacebookIrcGateway
 
       begin
         p @opts.callback
+        
+        I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
+        I18n.default_locale = @opts.locale
+        
         agent = FacebookOAuth::Client.new(
           :application_id     => @opts.app_id,
           :application_secret => @opts.app_secret,
@@ -69,9 +73,6 @@ module FacebookIrcGateway
         :adapter  => @opts.db['adapter'],
         :database => @opts.db['database']
       )
-
-      I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
-      I18n.default_locale = @opts.locale
 
       @posts = []
       @channels = {}
@@ -446,13 +447,13 @@ module FacebookIrcGateway
     def error_notice(e)
       case e
       when OAuth2::HTTPError
-        post server_name, NOTICE, main_channel, "The token which you use might be old. Please carry out setup.rb again."
+        post server_name, NOTICE, main_channel, I18n.t('error.oauth2_http')
       when NoMethodError
         if e.to_s =~ /undefined\smethod\s.me.\sfor\snil:NilClass/
-          post server_name, NOTICE, main_channel, "I cannot correct the certification. Please reboot fig.rb."
+          post server_name, NOTICE, main_channel, I18n.t('error.no_method_me')
         end
       when SocketError
-        post server_name, NOTICE, main_channel, "I cannot be connected to the network. Please confirm environment of the Internet."
+        post server_name, NOTICE, main_channel, I18n.t('error.socket')
       end
     end
   end
