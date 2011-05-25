@@ -7,32 +7,17 @@ Net::HTTP.version_1_2
 module FacebookIrcGateway
   class Utils
     def self.shorten_url(url)
-      # already shoten
       return url if url.size < 20
-  
-      api = URI.parse 'https://www.googleapis.com/urlshortener/v1/url'
-  
-      https = Net::HTTP.new(api.host, api.port)
-      https.use_ssl = true
-      https.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      https.start {|http|
-        header = {"Content-Type" => "application/json"}
-        body   = {'longUrl' => url}.to_json
-        response = http.post(api.path, body, header)
-        json = JSON.parse(response.body)
-        short = json['id']
-  
-        return short if short and short.size > 14
-      }
-  
-      return url
+      json = JSON.parse(request_short_url(url))
+      short = json['id']
+      (short && short.size > 14) ? short : url
     end
 
     ##
     # 発言内容の URL を取得して短くする
     # @param:: +message+ フィード文字列
     def self.url_filter(message)
-      message.gsub( URI.regexp(["http", "https"]) ){ |url|
+      message.gsub( URI.regexp(["http", "https"]) ) do |url|
         begin
           u = URI( url )
           http = Net::HTTP.new( u.host )
@@ -44,8 +29,23 @@ module FacebookIrcGateway
           puts e.inspect
           url
         end
-      }
+      end
     end
+
+    private
+    def self.request_short_url(url)
+      api = URI.parse 'https://www.googleapis.com/urlshortener/v1/url'
+      https = Net::HTTP.new(api.host, api.port)
+      https.use_ssl = true
+      https.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      https.start do |http|
+        header = {"Content-Type" => "application/json"}
+        body   = {'longUrl' => url}.to_json
+        response = http.post(api.path, body, header)
+      end
+    end
+
   end
 end
 
