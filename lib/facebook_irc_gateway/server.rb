@@ -37,7 +37,6 @@ module FacebookIrcGateway
           :callback           => @opts.callback
         )
       rescue Exception => e
-        @log.error "#{__FILE__}: #{__LINE__}L"
         error_messages(e)
       end
   
@@ -54,7 +53,6 @@ module FacebookIrcGateway
         @me[:id]   = me['id']
         @me[:name] = get_name(:data => me)
       rescue Exception => e
-        @log.error "#{__FILE__}: #{__LINE__}L"
         error_messages(e)
       end
 
@@ -79,7 +77,6 @@ module FacebookIrcGateway
         begin
           check_friends
         rescue Exception => e
-          @log.error "#{__FILE__}: #{__LINE__}L"
           error_messages(e)
         end
       end
@@ -90,7 +87,6 @@ module FacebookIrcGateway
           begin
             check_news
           rescue Exception => e
-            @log.error "#{__FILE__}: #{__LINE__}L"
             error_messages(e)
           end
           sleep 20
@@ -196,7 +192,6 @@ module FacebookIrcGateway
 
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-          @log.error "#{__FILE__}: #{__LINE__}L"
           error_messages(e)
         end
       end
@@ -219,7 +214,6 @@ module FacebookIrcGateway
         end if comments
       rescue Exception => e
         post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-        @log.error "#{__FILE__}: #{__LINE__}L"
         error_messages(e)
       end
     end
@@ -243,7 +237,6 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.like')} #{name}: #{mes}"
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-      @log.error "#{__FILE__}: #{__LINE__}L"
       error_messages(e)
     end
 
@@ -266,7 +259,6 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-      @log.error "#{__FILE__}: #{__LINE__}L"
       error_messages(e)
     end
 
@@ -278,7 +270,6 @@ module FacebookIrcGateway
           @posts.push [id, mes]
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-          @log.error "#{__FILE__}: #{__LINE__}L"
           error_messages(e)
         end
       end
@@ -301,7 +292,6 @@ module FacebookIrcGateway
       end
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.fail_update')
-      @log.error "#{__FILE__}: #{__LINE__}L"
       error_messages(e)
     end
 
@@ -370,7 +360,6 @@ module FacebookIrcGateway
           end if feed.from.id == @me[:id]
         end
       rescue Exception => e
-        @log.error "#{__FILE__}: #{__LINE__}L"
         error_messages(e)
       end
     end
