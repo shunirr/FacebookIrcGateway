@@ -375,7 +375,7 @@ module FacebookIrcGateway
 
       if @userlist.nil?
         begin
-          @userlist = YAML::load_file(@opts.userlist)
+          @userlist = YAML::load_file(@opts.userlist) || {}
         rescue Exception => e
           @userlist = {}
         end
