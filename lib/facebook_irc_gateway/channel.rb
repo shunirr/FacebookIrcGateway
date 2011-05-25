@@ -1,6 +1,3 @@
-require 'facebook_oauth'
-require 'facebook_irc_gateway/models/duplication'
-
 module FacebookIrcGateway
   class Channel
 

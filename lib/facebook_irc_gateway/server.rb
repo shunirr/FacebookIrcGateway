@@ -1,21 +1,10 @@
 require 'rubygems'
-require 'net/irc'
 require 'uri'
 require 'oauth'
-require 'facebook_oauth'
 require 'openssl'
 require 'open-uri'
 require 'yaml'
-require 'ya2yaml'
-require 'active_record'
 require 'i18n'
-
-require 'facebook_irc_gateway/channel'
-require 'facebook_irc_gateway/utils'
-require 'facebook_irc_gateway/typable_map'
-require 'facebook_irc_gateway/constants'
-require 'facebook_irc_gateway/models/duplication'
-require 'facebook_irc_gateway/feed'
 
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
@@ -38,17 +27,17 @@ module FacebookIrcGateway
 
       begin
         p @opts.callback
+        
+        I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
+        I18n.default_locale = @opts.locale
+        
         agent = FacebookOAuth::Client.new(
           :application_id     => @opts.app_id,
           :application_secret => @opts.app_secret,
           :callback           => @opts.callback
         )
       rescue Exception => e
-        @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
   
       @me = {}
@@ -64,20 +53,13 @@ module FacebookIrcGateway
         @me[:id]   = me['id']
         @me[:name] = get_name(:data => me)
       rescue Exception => e
-        @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
 
       ActiveRecord::Base.establish_connection(
         :adapter  => @opts.db['adapter'],
         :database => @opts.db['database']
       )
-
-      I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
-      I18n.default_locale = @opts.locale
 
       @posts = []
       @channels = {}
@@ -95,11 +77,7 @@ module FacebookIrcGateway
         begin
           check_friends
         rescue Exception => e
-          @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
+          error_messages(e)
         end
       end
   
@@ -109,11 +87,7 @@ module FacebookIrcGateway
           begin
             check_news
           rescue Exception => e
-            @log.error "#{__FILE__}: #{__LINE__}L"
-            @log.error e.inspect
-            e.backtrace.each do |l|
-              @log.error "\t#{l}"
-            end
+            error_messages(e)
           end
           sleep 20
         end
@@ -176,7 +150,7 @@ module FacebookIrcGateway
         message = m[1]
 
         command, tid, mes = message.split(' ', 3)
-        tid = tid.downcase
+        tid.downcase! if tid
         case command.downcase
         when 'like', 'fav', 'arr'
           like tid
@@ -218,11 +192,7 @@ module FacebookIrcGateway
 
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-          @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
+          error_messages(e)
         end
       end
     end
@@ -244,11 +214,7 @@ module FacebookIrcGateway
         end if comments
       rescue Exception => e
         post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-        @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
     end
 
@@ -271,11 +237,7 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.like')} #{name}: #{mes}"
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-      @log.error "#{__FILE__}: #{__LINE__}L"
-      @log.error e.inspect
-      e.backtrace.each do |l|
-        @log.error "\t#{l}"
-      end
+      error_messages(e)
     end
 
     def unlike tid
@@ -297,11 +259,7 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-      @log.error "#{__FILE__}: #{__LINE__}L"
-      @log.error e.inspect
-      e.backtrace.each do |l|
-        @log.error "\t#{l}"
-      end
+      error_messages(e)
     end
 
     def reply tid, mes
@@ -312,11 +270,7 @@ module FacebookIrcGateway
           @posts.push [id, mes]
         rescue Exception => e
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-          @log.error "#{__FILE__}: #{__LINE__}L"
-          @log.error e.inspect
-          e.backtrace.each do |l|
-            @log.error "\t#{l}"
-          end
+          error_messages(e)
         end
       end
     end
@@ -338,11 +292,7 @@ module FacebookIrcGateway
       end
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.fail_update')
-      @log.error "#{__FILE__}: #{__LINE__}L"
-      @log.error e.inspect
-      e.backtrace.each do |l|
-        @log.error "\t#{l}"
-      end
+      error_messages(e)
     end
 
     def check_friends
@@ -410,11 +360,7 @@ module FacebookIrcGateway
           end if feed.from.id == @me[:id]
         end
       rescue Exception => e
-        @log.error "#{__FILE__}: #{__LINE__}L"
-        @log.error e.inspect
-        e.backtrace.each do |l|
-          @log.error "\t#{l}"
-        end
+        error_messages(e)
       end
     end
 
@@ -465,6 +411,27 @@ module FacebookIrcGateway
 
       open(@opts.userlist, 'w') do |f|
         f.puts @userlist.fig_ya2yaml(:syck_compatible => true)
+      end
+    end
+    
+    def error_messages(e)
+      error_notice(e)
+      @log.error e.inspect
+      e.backtrace.each do |l|
+        @log.error "\t#{l}"
+      end
+    end
+    
+    def error_notice(e)
+      case e
+      when OAuth2::HTTPError
+        post server_name, NOTICE, main_channel, I18n.t('error.oauth2_http')
+      when NoMethodError
+        if e.to_s =~ /undefined\smethod\s.me.\sfor\snil:NilClass/
+          post server_name, NOTICE, main_channel, I18n.t('error.no_method_me')
+        end
+      when SocketError
+        post server_name, NOTICE, main_channel, I18n.t('error.socket')
       end
     end
   end
