@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
 require 'net/https'
 require 'json'
@@ -43,6 +43,7 @@ module FacebookIrcGateway
         header = {"Content-Type" => "application/json"}
         body   = {'longUrl' => url}.to_json
         response = http.post(api.path, body, header)
+        return response.body
       end
     end
 
