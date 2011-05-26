@@ -14,4 +14,5 @@ gem "rake", "=0.8.7"
 
 group :test do
   gem "rspec", "=2.6.0"
+  gem "webmock", "=1.6.4"
 end
