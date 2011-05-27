@@ -162,6 +162,8 @@ module FacebookIrcGateway
           reply tid, mes
         when 'rres'
           rres tid, mes
+        when 'hr'
+          haruna tid
         else
           case message
           when 'undo'
@@ -272,6 +274,18 @@ module FacebookIrcGateway
           post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
           error_messages(e)
         end
+      end
+    end
+
+    def haruna tid
+      mes = 'しゃーなしだな！'
+      begin
+        did, data = @timeline[tid] 
+        id = @client.status(data.id).comments(:create, :message => mes)['id']
+        @posts.push [id, mes]
+      rescue Exception => e
+        post server_name, NOTICE, main_channel, mes)
+        error_messages(e)
       end
     end
 
