@@ -284,7 +284,7 @@ module FacebookIrcGateway
         id = @client.status(data.id).comments(:create, :message => mes)['id']
         @posts.push [id, mes]
       rescue Exception => e
-        post server_name, NOTICE, main_channel, mes)
+        post server_name, NOTICE, main_channel, mes
         error_messages(e)
       end
     end
