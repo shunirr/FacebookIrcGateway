@@ -26,7 +26,7 @@ module FacebookIrcGateway
       @color = options[:color] || {}
 
       tokens = message_build
-      tokens << " > #{@to.name}".irc_colorize(:color => @color[:parent_message]) if @to
+      tokens << " >> #{@to.map(&:name).uniq.join(' ')}".irc_colorize(:color => @color[:parent_message]) if @to
       tokens << "(#{options[:tid]})".irc_colorize(:color => @color[:tid]) if options[:tid]
       tokens << "(via #{app_name})".irc_colorize(:color => @color[:app_name])
 
@@ -47,7 +47,7 @@ module FacebookIrcGateway
         eval("@#{k}=v")
       end
       @from = User.new(@from['id'], @from['name']) if @from
-      @to   = User.new(@to['data'][0]['id'], @to['data'][0]['name']) if @to && @to['data']
+      @to = @to['data'].map{|m| User.new(m['id'], m['name'])}if @to && @to['data']
       @type = @type.to_sym if @type
  
       comments = []
