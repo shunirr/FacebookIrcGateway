@@ -13,76 +13,42 @@ module FacebookIrcGateway
       'videos',
       'events',
       'groups',
-      'checkins']
+      'checkins'
+    ]
 
-    def initialize(server, name)
+    attr_reader :server, :session, :name, :object
+
+    def initialize(server, session, name)
       @server = server
+      @session = session
       @name = name
-      @topic = nil
       @object = nil
     end
 
-    # Helpers {{{1
-    def post(command, options = {})
-      from = options[:from] || @server.server_name
+    # IRC methods {{{1
+    def send_irc_command(command, options = {})
+      from = (options[:from] || @server.server_name).gsub(/\s+/, '')
       channel = options[:channel] || @name
       params = options[:params] || []
       @server.post from, command, channel, *params
     end
 
     def privmsg(message, options = {})
-      post 'PRIVMSG', options.merge(:params => [message])
+      send_irc_command 'PRIVMSG', options.merge(:params => [message])
     end
 
     def notice(message, options = {})
-      post 'NOTICE', options.merge(:params => [message])
+      send_irc_command 'NOTICE', options.merge(:params => [message])
     end
-
-    def object_name(item)
-      tokens = item.inject([]) do |result, (key, value)|
-        result << value if ['name', 'category'].include? key
-        result
-      end
-      tokens.join(' / ')
-    end
-    # }}}
+    #}}}
 
     # Events {{{1
     def on_privmsg(message)
-      # check object command
-      command, args = message.split(/\s+/)
-      @server.log.debug "command: #{[command, args].to_s}"
-
-      if OBJECTS.include?(command)
-        items = @server.client.me.send(command)['data'].reverse
-        @server.log.debug "items: #{items.to_s}"
-
-        if items.empty?
-          notice 'no match found'
-          return
-        else
-          if args.nil?
-            # list show
-            items.each_with_index do |item, index|
-              notice "#{index + 1}: #{object_name item}"
-            end
-          else
-            # set object
-            item = items[args.to_i - 1]
-            if item
-              start item['id']
-            else
-              notice 'invalid argument'
-            end
-          end
-        end
-
-        return
-      end
-
-      if @object
-        feed_post message
-        @server.log.debug item.to_s
+      # check command
+      return if process_command message
+      return if @session.command_manager.process self, message
+      if has_object?
+        status = update message
       end
     end
 
@@ -94,17 +60,26 @@ module FacebookIrcGateway
     end
 
     def on_topic(topic)
-      start topic
+      #start topic
     end
     # }}}
 
-    private
+    def has_object?
+      not @object.nil?
+    end
+
+    def object_name(item)
+      item.inject([]) do |result, (key, value)|
+        result << value if ['name', 'category'].include? key; result
+      end.join(' / ')
+    end
+    # }}}
 
     def start(id)
-      @object = FacebookOAuth::FacebookObject.new(id, @server.client)
-      @dupulications = Duplication.objects id
+      @object = FacebookOAuth::FacebookObject.new(id, @session.api)
+      @duplications = Duplication.objects(id)
 
-      notice "bind: #{object_name @object.info}"
+      notice "start: #{object_name @object.info} (#{id})"
 
       stop
       @check_feed_thread = async do
@@ -119,6 +94,16 @@ module FacebookIrcGateway
         @check_feed_thread = nil
       end
     end
+
+    def feed
+      @object.feed['data']
+    end
+
+    def update(message)
+      @object.feed(:create, :message => message)
+    end
+
+    private
 
     def async(options = {})
       @server.log.debug 'begin: async'
@@ -148,26 +133,129 @@ module FacebookIrcGateway
       end
     end
 
-    def feed_get
-      @object.feed['data']
-    end
-
-    def feed_post message
-      @object.feed(:create, :message => message)
+    def check_duplication(id)
+      dup = @duplications.find_or_initialize_by_object_id(id)
+      new = dup.new_record?
+      dup.save
+      yield if new
     end
 
     def check_feed
-      @server.log.debug 'begin: check_feed'
-      feed_get.reverse.each do |item|
-        @dupulications.find_or_create_by_object_id item['id'] do
-          #TODO: いい感じに出力する
-          name = item['from']['name'].gsub(/\s+/, '')
-          message = item['message']
-          privmsg message, :from => name
+      #@server.log.debug 'begin: check_feed'
+      feed.reverse.each do |item|
+        send_message item
+      end
+      #@server.log.debug 'end: check_feed'
+    end
+
+    def send_message(item, options = {})
+      id          = item['id']
+      from_id     = item['from']['id']
+      from_name   = item['from']['name'] || server_name
+      tos         = item['to']['data'] if item['to']
+      picture     = item['picture']
+      link        = item['link']
+      name        = item['name']
+      if item['properties']
+        properties = item['properties'].map {|p| p['text'] }
+      end
+      icon        = item['icon']
+      type        = item['type']
+      object_id   = item['object_id']
+      if item['application']
+        app_id    = item['application']['id']
+        app_name  = item['application']['name'] || 'web'
+      end
+      message     = item['message'].to_s
+      caption     = item['caption']
+      description = item['description'].to_s.truncate(100)
+      comments    = item['comments'] && item['comments']['data'] || []
+      likes       = item['likes'] && item['likes']['data'] || []
+
+      check_duplication id do
+        tid = @session.typablemap.push([id, item])
+
+        msgs = []
+        msgs << message
+        msgs << name
+        msgs << caption
+        msgs << description
+
+        tokens = []
+        tokens << msgs.select { |s| !(s.nil? or s.empty?) }.join(' / ')
+        tokens << "#{Utils.shorten_url(link)}" if link
+        tokens << "(#{tid})".irc_colorize(:color => @server.opts.color[:tid]) if tid
+        tokens << "(via #{app_name})".irc_colorize(:color => @server.opts.color[:app_name])
+
+        @session.api.status(id).likes(:create) if @server.opts.autoliker == true
+        method = (from_id == @session.me['id']) ? :notice : :privmsg
+        send method, tokens.join(' '), :from => from_name
+      end
+
+      comments.each do |comment|
+        cid   = comment['id']
+        cname = comment['from']['name']
+        cmes  = Utils.url_filter(comment['message'])
+
+        check_duplication cid do
+          ctid = @session.typablemap.push([cid, item])
+          tokens = [
+            cmes,
+            "(#{ctid})".irc_colorize(:color => @server.opts.color[:tid]),
+            ">> #{from_name}: #{message}".irc_colorize(:color => @server.opts.color[:parent_message])
+          ]
+          method = (comment['from']['id'] == @session.me['id']) ? :notice : :privmsg
+          send method, tokens.join(' '), :from => cname
         end
       end
-      @server.log.debug 'end: check_feed'
+
+      likes.each do |like|
+        lid   = "#{id}_like_#{like['id']}"
+        lname = like['name']
+        check_duplication lid do
+          tokens = [I18n.t('server.like_mark').irc_colorize(:color => @server.opts.color[:like]), "#{from_name}: ", message]
+          notice tokens.join(' '), :from => lname
+        end
+      end
+    end
+
+    def process_command(message)
+      command, args = message.split(/\s+/)
+      return false if not OBJECTS.include?(command)
+
+      @server.log.debug "command: #{[command, args].to_s}"
+
+      items = @session.api.me.send(command)['data'].reverse
+      @server.log.debug "items: #{items.to_s}"
+
+      if items.empty?
+        notice 'no match found'
+      else
+        if args.nil?
+          # list show
+          items.each_with_index do |item, index|
+            notice "#{index + 1}: #{object_name item}"
+          end
+        else
+          # set object
+          item = items[args.to_i - 1]
+          if item
+            start item['id']
+          else
+            notice 'invalid argument'
+          end
+        end
+      end
+
+      return true
     end
   end
+
+  class NewsFeedChannel < Channel
+    def feed
+      @object.home['data']
+    end
+  end
+
 end
 

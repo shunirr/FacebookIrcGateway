@@ -11,18 +11,23 @@ OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
+
+    attr_reader :log, :prefix
+    attr_reader :opts # 設定を細かくして session に移すべき
+    public :post
+  
     def server_name
       'FacebookIrcGateway'
     end
   
     def server_version
-      '0.0.0'
+      '0.0.1'
     end
   
     def main_channel
       '#facebook'
     end
-  
+    
     def initialize(server, socket, logger, opts={})
       super
 
@@ -62,6 +67,7 @@ module FacebookIrcGateway
         :database => @opts.db['database']
       )
 
+      @sessions = {}
       @posts = []
       @channels = {}
       @duplications = Duplication.objects @me[:id]
@@ -69,30 +75,8 @@ module FacebookIrcGateway
   
     def on_user(m)
       super
-      post @prefix, JOIN, main_channel
-      post server_name, MODE, main_channel, '+o', @prefix.nick
-  
-      @timeline = TypableMap.new(50 * 50, true)
-      @check_friends_thread = Thread.start do
-        # TODO: loop
-        begin
-          check_friends
-        rescue Exception => e
-          error_messages(e)
-        end
-      end
-  
-      @check_news_thread = Thread.start do
-        sleep 3
-        while true
-          begin
-            check_news
-          rescue Exception => e
-            error_messages(e)
-          end
-          sleep 20
-        end
-      end
+      @me_id = 'me' # とりあえず固定
+      @sessions[@me_id] = Session.new self, @client
     end
   
     def on_disconnected
@@ -100,8 +84,15 @@ module FacebookIrcGateway
     end
   
     def on_privmsg(m)
-      super
-      Thread.start{process_privmsg m}
+      name, message = m.params
+      session = find_session m
+      Thread.start do
+        begin
+          session.on_privmsg name, message
+        rescue Exception => e
+          error_messages(e)
+        end
+      end if session
     end
   
     def on_ctcp(target, message)
@@ -114,40 +105,31 @@ module FacebookIrcGateway
     end
 
     def on_topic(m)
-      channel_name, topic, = m.params
-      channel = @channels[channel_name]
-      channel.on_topic(topic) if channel
+      name, topic, = m.params
+      session = find_session m
+      session.on_topic names if session
     end
   
     def on_join(m)
-      channel_names = m.params[0].split(',')
-      channel_names.each do |channel_name|
-        channel_name.strip!
-        next if main_channel == channel_name
-        channel = @channels[channel_name] = Channel.new(self, channel_name)
-        channel.on_join if channel
-        post @prefix, JOIN, channel_name
-      end
+      names = m.params[0].split(/\s*,\s*/)
+      session = find_session m
+      session.on_join names if session
     end
   
     def on_part(m)
-      channel_names = m.params[0].split(',')
-      channel_names.each do |channel_name|
-        channel_name.strip!
-        next if main_channel == channel_name
-        channel = @channels.delete(channel_name)
-        channel.on_part if channel
-        post @prefix, PART, channel_name
-      end
+      names = m.params[0].split(/\s*,\s*/)
+      session = find_session m
+      session.on_part names if session
     end
 
-    attr :client
-    attr :log
-    public :post
-  
     private
+    def find_session(m)
+      # TODO: ユーザ名でセッションを切り替えたりする
+      @sessions[@me_id]
+    end
+
     def process_privmsg m
-        channel_name = m[0]
+        name = m[0]
         message = m[1]
 
         command, tid, mes = message.split(' ', 3)
@@ -170,7 +152,7 @@ module FacebookIrcGateway
           when 'undo'
             undo
           else
-            update_status message, channel_name
+            update_status message, name
           end
         end
     end
@@ -296,14 +278,14 @@ module FacebookIrcGateway
       post server_name, NOTICE, main_channel, "#{I18n.t('server.delete')}: #{message}"
     end
 
-    def update_status message, channel_name
-      if channel_name == main_channel
+    def update_status message, name
+      if name == main_channel
         message += @opts.suffix
         id = @client.me.feed(:create, :message => message)['id']
         @posts.push [id, message]
       else
-        channel = @channels[channel_name]
-        channel.on_privmsg(message) if channel
+        session = @sessions[@me_id]
+        session.on_privmsg name, message if session
       end
     rescue Exception => e
       post server_name, NOTICE, main_channel, I18n.t('server.fail_update')

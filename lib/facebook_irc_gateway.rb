@@ -6,8 +6,11 @@ require 'facebook_irc_gateway/utils' #TODO: オープンクラスが理由でaut
 
 module FacebookIrcGateway
   autoload :Server,  'facebook_irc_gateway/server'
+  autoload :Session,  'facebook_irc_gateway/session'
   autoload :Channel, 'facebook_irc_gateway/channel'
+  autoload :NewsFeedChannel, 'facebook_irc_gateway/channel'
   autoload :TypableMap, 'facebook_irc_gateway/typable_map'
+  autoload :CommandManager, 'facebook_irc_gateway/command_manager'
   autoload :Constants, 'facebook_irc_gateway/constants'
   autoload :Duplication, 'facebook_irc_gateway/models/duplication'
   autoload :User, 'facebook_irc_gateway/feed'
