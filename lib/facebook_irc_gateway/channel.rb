@@ -184,10 +184,10 @@ module FacebookIrcGateway
         tokens = []
         tokens << msgs.select { |s| !(s.nil? or s.empty?) }.join(' / ')
         tokens << "#{Utils.shorten_url(link)}" if link
-        tokens << "(#{tid})".irc_colorize(:color => @server.opts.color[:tid]) if tid
-        tokens << "(via #{app_name})".irc_colorize(:color => @server.opts.color[:app_name])
+        tokens << "(#{tid})".irc_colorize(:color => @session.options.color[:tid]) if tid
+        tokens << "(via #{app_name})".irc_colorize(:color => @session.options.color[:app_name])
 
-        @session.api.status(id).likes(:create) if @server.opts.autoliker == true
+        @session.api.status(id).likes(:create) if @session.options.autoliker == true
         method = (from_id == @session.me['id']) ? :notice : :privmsg
         send method, tokens.join(' '), :from => from_name
       end
@@ -201,8 +201,8 @@ module FacebookIrcGateway
           ctid = @session.typablemap.push([cid, item])
           tokens = [
             cmes,
-            "(#{ctid})".irc_colorize(:color => @server.opts.color[:tid]),
-            ">> #{from_name}: #{message}".irc_colorize(:color => @server.opts.color[:parent_message])
+            "(#{ctid})".irc_colorize(:color => @session.options.color[:tid]),
+            ">> #{from_name}: #{message}".irc_colorize(:color => @session.options.color[:parent_message])
           ]
           method = (comment['from']['id'] == @session.me['id']) ? :notice : :privmsg
           send method, tokens.join(' '), :from => cname
@@ -213,7 +213,7 @@ module FacebookIrcGateway
         lid   = "#{id}_like_#{like['id']}"
         lname = like['name']
         check_duplication lid do
-          tokens = [I18n.t('server.like_mark').irc_colorize(:color => @server.opts.color[:like]), "#{from_name}: ", message]
+          tokens = [I18n.t('server.like_mark').irc_colorize(:color => @session.options.color[:like]), "#{from_name}: ", message]
           notice tokens.join(' '), :from => lname
         end
       end
