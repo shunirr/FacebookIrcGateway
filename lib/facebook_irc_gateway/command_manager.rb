@@ -112,7 +112,13 @@ module FacebookIrcGateway
         end
       end
 
-      register [:alias, :unlike, :hr], :tid => false do |options|
+      register :unlike do |options|
+        session, channel, status, id = options.values_at(:session, :channel, :status, :id)
+        session.api.send(:_delete, "#{id}/likes")
+        channel.notice "unlike at: #{status.message}"
+      end
+
+      register [:alias, :hr], :tid => false do |options|
         session, channel = options.values_at(:session, :channel)
         channel.notice "Unsupported Command"
       end
