@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'i18n'
 
 module FacebookIrcGateway
@@ -118,7 +119,14 @@ module FacebookIrcGateway
         channel.notice "unlike at: #{status.message}"
       end
 
-      register [:alias, :hr], :tid => false do |options|
+      register :hr do |options|
+        session, channel, status = options.values_at(:session, :channel, :status)
+        message = 'しゃーなしだな！' # ま、しゃーなしだな！
+        res = session.api.status(status.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+
+      register :alias, :tid => false do |options|
         session, channel = options.values_at(:session, :channel)
         channel.notice "Unsupported Command"
       end
