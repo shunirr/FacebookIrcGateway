@@ -32,7 +32,7 @@ module FacebookIrcGateway
       super
 
       begin
-        p @opts.callback
+        @log.debug @opts.callback
         
         I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
         I18n.default_locale = @opts.locale
@@ -128,169 +128,96 @@ module FacebookIrcGateway
       @sessions[@me_id]
     end
 
-    def process_privmsg m
-      name = m[0]
-      message = m[1]
+     # TODO: alias
+#    def process_alias tid, mes
+#      if mes
+#        begin
+#          did, data = @timeline[tid]
+#          if data.id == did
+#            old_name = get_name(:id => data.from.id, :name => data.from.name)
+#            set_name(:id => data.from.id, :name => mes)
+#          else
+#            data.comments.each do |comment|
+#              if comment.id == did
+#                old_name = get_name(:id => comment.from.id, :name => comment.from.name)
+#                set_name(:id => comment.from.id, :name => mes)
+#              end
+#            end
+#          end
+#
+#          post server_name, NOTICE, main_channel, "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{mes} #{I18n.t('server.alias_2')}"
+#
+#        rescue Exception => e
+#          post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+#          error_messages(e)
+#        end
+#      end
+#    end
 
-      command, tid, mes = message.split(' ', 3)
-      tid.downcase! if tid
-      case command.downcase
-      when 'like', 'fav', 'arr'
-        like tid
-      when 'alias'
-        process_alias tid, mes
-      when 'unlike'
-        unlike tid
-      when 're'
-        reply tid, mes
-      when 'rres'
-        rres tid, mes
-      when 'hr'
-        haruna tid
-      else
-        case message
-        when 'undo'
-          undo
-        else
-          update_status message, name
-        end
-      end
-    end
+    # TODO: rres
+#    def rres tid, count
+#      did, data = @timeline[tid] 
+#      return if data.comments.empty?
+#
+#      begin
+#        name = get_name(:id => data.from.id, :name => data.from.name)
+#        post name, NOTICE, main_channel, data.message
+#  
+#        comments = data.comments
+#        comments = comments[(comments.size - count.to_i) .. comments.size] unless count.nil?
+#  
+#        comments.each do |comment|
+#          cname = get_name(:id => comment.from.id, :name => comment.from.name)
+#          post cname, NOTICE, main_channel, comment.message
+#        end if comments
+#      rescue Exception => e
+#        post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+#        error_messages(e)
+#      end
+#    end
 
-    def process_alias tid, mes
-      if mes
-        begin
-          did, data = @timeline[tid]
-          if data.id == did
-            old_name = get_name(:id => data.from.id, :name => data.from.name)
-            set_name(:id => data.from.id, :name => mes)
-          else
-            data.comments.each do |comment|
-              if comment.id == did
-                old_name = get_name(:id => comment.from.id, :name => comment.from.name)
-                set_name(:id => comment.from.id, :name => mes)
-              end
-            end
-          end
+    # TODO: unlike
+#    def unlike tid
+#      did, data = @timeline[tid] 
+#      @client.send(:_delete, "#{did}/likes")
+#
+#      if data.id == did
+#        mes  = data.message
+#        name = get_name(:id => data.from.id, :name => data.from.name)
+#      else
+#        data.comments.each do |comment|
+#          if comment.id == did
+#            mes  = comment.message
+#            name = get_name(:id => comment.from.id, :name => comment.from.name)
+#          end
+#        end
+#      end
+#
+#      post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
+#    rescue Exception => e
+#      post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
+#      error_messages(e)
+#    end
 
-          post server_name, NOTICE, main_channel, "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{mes} #{I18n.t('server.alias_2')}"
+    # TODO: haruna
+#    def haruna tid
+#      mes = 'しゃーなしだな！'
+#      begin
+#        did, data = @timeline[tid] 
+#        id = @client.status(data.id).comments(:create, :message => mes)['id']
+#        @posts.push [id, mes]
+#      rescue Exception => e
+#        post server_name, NOTICE, main_channel, mes
+#        error_messages(e)
+#      end
+#    end
 
-        rescue Exception => e
-          post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-          error_messages(e)
-        end
-      end
-    end
-
-    def rres tid, count
-      did, data = @timeline[tid] 
-      return if data.comments.empty?
-
-      begin
-        name = get_name(:id => data.from.id, :name => data.from.name)
-        post name, NOTICE, main_channel, data.message
-  
-        comments = data.comments
-        comments = comments[(comments.size - count.to_i) .. comments.size] unless count.nil?
-  
-        comments.each do |comment|
-          cname = get_name(:id => comment.from.id, :name => comment.from.name)
-          post cname, NOTICE, main_channel, comment.message
-        end if comments
-      rescue Exception => e
-        post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-        error_messages(e)
-      end
-    end
-
-    def like tid
-      did, data = @timeline[tid] 
-      @client.status(did).likes(:create)
-
-      if data.id == did
-        mes  = data.message
-        name = get_name(:id => data.from.id, :name => data.from.name)
-      else
-        data.comments.each do |comment|
-          if comment.id == did
-            mes  = comment.message
-            name = get_name(:id => comment.from.id, :name => comment.from.name)
-          end
-        end
-      end
-
-      post server_name, NOTICE, main_channel, "#{I18n.t('server.like')} #{name}: #{mes}"
-    rescue Exception => e
-      post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-      error_messages(e)
-    end
-
-    def unlike tid
-      did, data = @timeline[tid] 
-      @client.send(:_delete, "#{did}/likes")
-
-      if data.id == did
-        mes  = data.message
-        name = get_name(:id => data.from.id, :name => data.from.name)
-      else
-        data.comments.each do |comment|
-          if comment.id == did
-            mes  = comment.message
-            name = get_name(:id => comment.from.id, :name => comment.from.name)
-          end
-        end
-      end
-
-      post server_name, NOTICE, main_channel, "#{I18n.t('server.unlike')} #{name}: #{mes}"
-    rescue Exception => e
-      post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-      error_messages(e)
-    end
-
-    def reply tid, mes
-      if mes
-        begin
-          did, data = @timeline[tid] 
-          id = @client.status(data.id).comments(:create, :message => mes)['id']
-          @posts.push [id, mes]
-        rescue Exception => e
-          post server_name, NOTICE, main_channel, I18n.t('server.invalid_typablemap')
-          error_messages(e)
-        end
-      end
-    end
-
-    def haruna tid
-      mes = 'しゃーなしだな！'
-      begin
-        did, data = @timeline[tid] 
-        id = @client.status(data.id).comments(:create, :message => mes)['id']
-        @posts.push [id, mes]
-      rescue Exception => e
-        post server_name, NOTICE, main_channel, mes
-        error_messages(e)
-      end
-    end
-
-    def undo
-      id, message = @posts.pop
-      @client.send(:_delete, id)
-      post server_name, NOTICE, main_channel, "#{I18n.t('server.delete')}: #{message}"
-    end
-
-    def update_status message, name
-      if name == main_channel
-        message += @opts.suffix
-        id = @client.me.feed(:create, :message => message)['id']
-        @posts.push [id, message]
-      else
-        session = @sessions[@me_id]
-        session.on_privmsg name, message if session
-      end
-    rescue Exception => e
-      post server_name, NOTICE, main_channel, I18n.t('server.fail_update')
-      error_messages(e)
-    end
+    # TODO: undo
+#    def undo
+#      id, message = @posts.pop
+#      @client.send(:_delete, id)
+#      post server_name, NOTICE, main_channel, "#{I18n.t('server.delete')}: #{message}"
+#    end
 
     def check_friends
       first = true unless @friends
@@ -323,10 +250,7 @@ module FacebookIrcGateway
       end
     end
   
-    def check_news
-      # Nothing
-    end
-
+    # TODO: この辺をざっくり public にしているの酷い
     public
     def get_name(options={})
       if options[:data]

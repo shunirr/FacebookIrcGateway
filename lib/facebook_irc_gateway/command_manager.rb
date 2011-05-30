@@ -68,7 +68,7 @@ module FacebookIrcGateway
     def register_builtins
       register :re do |options|
         session, channel, status, args = options.values_at(:session, :channel, :status, :args)
-        session.api.status(status['id']).comments(:create, :message => args)
+        session.api.status(status.id).comments(:create, :message => args)
         #channel.notice "re: #{status}"
       end
 

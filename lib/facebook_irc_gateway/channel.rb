@@ -146,19 +146,20 @@ module FacebookIrcGateway
 
     def send_message(item, options = {})
       begin
+        name = get_name :id => item.from.id, :name => item.from.name
         check_duplication item.id do
-          tid = @timeline.push([item.id, item])
+          tid = @session.typablemap.push([item.id, item])
           # TODO: auto-liker
           #@client.status(item.id).likes(:create) if @opts.autoliker == true
-          name = get_name(:name => item.from.name, :id => item.from.id)
           method = (item.from.id == @session.me['id']) ? :notice : :privmsg
           send method, item.to_s(:tid => tid, :color => @session.options.color), :from => name
+        end
 
         item.comments.each do |comment|
           check_duplication comment.id do
-            ctid = @timeline.push([comment.id, item])
-            cname = get_name(:name => comment.from.name, :id => comment.from.id)
-            method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+            ctid = @session.typablemap.push([comment.id, item])
+            cname = get_name :id => comment.from.id, :name => comment.from.name
+            method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
             send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => cname
           end
         end
@@ -166,8 +167,8 @@ module FacebookIrcGateway
         item.likes.each do |like|
           lid = "#{item.id}_like_#{like.from.id}"
           check_duplication lid do
-            lname = get_name(:name => like.from.name, :id => like.from.id)
-            notice like.to_s(:tid => ctid, :color => @session.options.color), :from => lname
+            lname = get_name :id => like.from.id, :name => like.from.name
+            notice like.to_s(:color => @session.options.color), :from => lname
           end
         end if item.from.id == @session.me['id']
 
@@ -207,21 +208,21 @@ module FacebookIrcGateway
       return true
     end
 
-    # TODO: 暫定移動
+    # TODO: 暫定
     def get_name(options={})
-      @object.get_name options
+      @server.get_name options
     end
 
     def set_name(options={})
-      @object.set_name options
+      @server.set_name options
     end
 
     def error_messages(e)
-      @object.error_messages e
+      @server.error_messages e
     end
     
     def error_notice(e)
-      @object.error_notice e
+      @server.error_notice e
     end
   end
 
