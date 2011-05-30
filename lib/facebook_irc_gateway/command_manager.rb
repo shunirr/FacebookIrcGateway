@@ -76,7 +76,7 @@ module FacebookIrcGateway
         session, channel, id, status = options.values_at(:session, :channel, :id, :status)
         session.api.status(id).likes(:create)
         session.history << {:id => id, :type => :like, :message => status.message}
-        channel.notice "(like) #{status.to_s}"
+        channel.notice "(like) #{status.from.name}: #{status.to_s}"
       end
 
       register :undo, :tid => false do |options|
@@ -94,7 +94,25 @@ module FacebookIrcGateway
         end
       end
 
-      register [:alias, :rres, :unlike, :hr], :tid => false do |options|
+      register :rres do |options|
+        session, channel, status, args = options.values_at(:session, :channel, :status, :args)
+        unless status.comments.empty?
+          channel.notice status.message, :from => status.from.name
+
+          size = status.comments.size
+          begin
+            start = size - ((args.nil?) ? size : args.to_i)
+          rescue => e
+            channel.notice I18n.t('server.invalid_typablemap')
+          end
+
+          status.comments[start...size].each do |comment|
+            channel.notice comment.message, :from => comment.from.name
+          end
+        end
+      end
+
+      register [:alias, :unlike, :hr], :tid => false do |options|
         session, channel = options.values_at(:session, :channel)
         channel.notice "Unsupported Command"
       end
