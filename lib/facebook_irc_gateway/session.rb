@@ -2,7 +2,7 @@
 module FacebookIrcGateway
   class Session
     attr_reader :server, :api, :command_manager
-    attr_reader :typablemap, :channels, :options
+    attr_reader :typablemap, :channels, :options, :history
 
     def initialize(server, api)
       @server = server
@@ -12,6 +12,7 @@ module FacebookIrcGateway
       @typablemap = TypableMap.new(50 * 50, true)
       @channels = {}
       @options = server.opts # とりあえず参照だけでもこっちでもつ
+      @history = []
 
       # join newsfeed
       newsfeed = join @server.main_channel, :type => NewsFeedChannel

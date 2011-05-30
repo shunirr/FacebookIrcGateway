@@ -17,7 +17,7 @@ module FacebookIrcGateway
       'checkins'
     ]
 
-    attr_reader :server, :session, :name, :object
+    attr_reader :server, :session, :name, :object, :privmsg, :notice
 
     def initialize(server, session, name)
       @server = server
@@ -101,7 +101,8 @@ module FacebookIrcGateway
     end
 
     def update(message)
-      @object.feed(:create, :message => message)
+      status = @object.feed(:create, :message => message)
+      @session.history << {:id => status['id'], :type => :status, :message => message} if status
     end
 
     private

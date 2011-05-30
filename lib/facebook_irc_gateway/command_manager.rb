@@ -29,7 +29,7 @@ module FacebookIrcGateway
       commands = @command_map[name] || []
       if not commands.empty?
         id, status = @session.typablemap[tid]
-        if status.nil?
+        if tid and status.nil?
           # 残念、さやかちゃんでした！
           channel.notice I18n.t('server.invalid_typablemap')
           cancel = true
@@ -68,14 +68,35 @@ module FacebookIrcGateway
     def register_builtins
       register :re do |options|
         session, channel, status, args = options.values_at(:session, :channel, :status, :args)
-        session.api.status(status.id).comments(:create, :message => args)
-        #channel.notice "re: #{status}"
+        res = session.api.status(status.id).comments(:create, :message => args)
+        session.history << {:id => res['id'], :type => :status, :message => args} if res
       end
 
       register [:like, :fav, :arr] do |options|
         session, channel, id, status = options.values_at(:session, :channel, :id, :status)
         session.api.status(id).likes(:create)
-        #channel.notice "like: #{status}"
+        session.history << {:id => id, :type => :like, :message => status.message}
+        channel.notice "(like) #{status.to_s}"
+      end
+
+      register :undo, :tid => false do |options|
+        session, channel = options.values_at(:session, :channel)
+        latest = session.history.pop
+        if latest
+          case latest[:type]
+          when :status
+            session.api.send(:_delete, latest[:id])
+            channel.notice "delete at: #{latest[:message]}"
+          when :like
+            session.api.send(:_delete, "#{latest[:id]}/likes")
+            channel.notice "unlike at: #{latest[:message]}"
+          end
+        end
+      end
+
+      register [:alias, :rres, :unlike, :hr], :tid => false do |options|
+        session, channel = options.values_at(:session, :channel)
+        channel.notice "Unsupported Command"
       end
     end
   end
