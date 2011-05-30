@@ -17,7 +17,7 @@ module FacebookIrcGateway
       'checkins'
     ]
 
-    attr_reader :server, :session, :name, :object, :privmsg, :notice
+    attr_reader :server, :session, :name, :object
 
     def initialize(server, session, name)
       @server = server
