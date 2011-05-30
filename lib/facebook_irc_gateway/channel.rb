@@ -152,15 +152,14 @@ module FacebookIrcGateway
           #@client.status(item.id).likes(:create) if @opts.autoliker == true
           name = get_name(:name => item.from.name, :id => item.from.id)
           method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-          send method, item.to_s(:tid => tid, :color => @server.opts.color), :from => name
-        end
+          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => name
 
         item.comments.each do |comment|
           check_duplication comment.id do
             ctid = @timeline.push([comment.id, item])
             cname = get_name(:name => comment.from.name, :id => comment.from.id)
             method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-            send method, comment.to_s(:tid => ctid, :color => @server.opts.color), :from => cname
+            send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => cname
           end
         end
 
@@ -168,7 +167,7 @@ module FacebookIrcGateway
           lid = "#{item.id}_like_#{like.from.id}"
           check_duplication lid do
             lname = get_name(:name => like.from.name, :id => like.from.id)
-            notice like.to_s(:tid => ctid, :color => @server.opts.color), :from => lname
+            notice like.to_s(:tid => ctid, :color => @session.options.color), :from => lname
           end
         end if item.from.id == @session.me['id']
 

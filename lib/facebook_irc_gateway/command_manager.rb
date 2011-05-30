@@ -69,13 +69,13 @@ module FacebookIrcGateway
       register :re do |options|
         session, channel, status, args = options.values_at(:session, :channel, :status, :args)
         session.api.status(status['id']).comments(:create, :message => args)
-        channel.notice "re: #{status}"
+        #channel.notice "re: #{status}"
       end
 
       register [:like, :fav, :arr] do |options|
         session, channel, id, status = options.values_at(:session, :channel, :id, :status)
         session.api.status(id).likes(:create)
-        channel.notice "like: #{status}"
+        #channel.notice "like: #{status}"
       end
     end
   end
