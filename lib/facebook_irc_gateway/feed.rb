@@ -9,7 +9,7 @@ module FacebookIrcGateway
     end
   end
 
-  class Feed
+  class Entry
     attr :type
     attr :id
     attr :comments
@@ -97,7 +97,7 @@ module FacebookIrcGateway
     end
   end
 
-  class Like < Feed
+  class Like < Entry
     def initialize(parent, data)
       super data
       @parent = parent
@@ -120,7 +120,7 @@ module FacebookIrcGateway
     end
   end
 
-  class Comment < Feed
+  class Comment < Entry
     def initialize(parent, data)
       super data
       @parent = parent
@@ -143,10 +143,13 @@ module FacebookIrcGateway
     end
   end
 
-  class Feeds < Array
+  class Feed < Array
     def initialize(data)
-      data['data'].each do |d|
-        self << Feed.new(d)
+      items = data['data']
+      unless items.nil?
+        items.each do |d|
+          self << Entry.new(d)
+        end
       end
     end
   end

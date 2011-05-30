@@ -129,32 +129,32 @@ module FacebookIrcGateway
     end
 
     def process_privmsg m
-        name = m[0]
-        message = m[1]
+      name = m[0]
+      message = m[1]
 
-        command, tid, mes = message.split(' ', 3)
-        tid.downcase! if tid
-        case command.downcase
-        when 'like', 'fav', 'arr'
-          like tid
-        when 'alias'
-          process_alias tid, mes
-        when 'unlike'
-          unlike tid
-        when 're'
-          reply tid, mes
-        when 'rres'
-          rres tid, mes
-        when 'hr'
-          haruna tid
+      command, tid, mes = message.split(' ', 3)
+      tid.downcase! if tid
+      case command.downcase
+      when 'like', 'fav', 'arr'
+        like tid
+      when 'alias'
+        process_alias tid, mes
+      when 'unlike'
+        unlike tid
+      when 're'
+        reply tid, mes
+      when 'rres'
+        rres tid, mes
+      when 'hr'
+        haruna tid
+      else
+        case message
+        when 'undo'
+          undo
         else
-          case message
-          when 'undo'
-            undo
-          else
-            update_status message, name
-          end
+          update_status message, name
         end
+      end
     end
 
     def process_alias tid, mes
@@ -324,43 +324,10 @@ module FacebookIrcGateway
     end
   
     def check_news
-      begin
-        feeds = Feeds.new(@client.me.home)
-        feeds.each do |feed|
-          @duplications.find_or_create_by_object_id feed.id do
-            tid = @timeline.push([feed.id, feed])
-
-            @client.status(feed.id).likes(:create) if @opts.autoliker == true
-
-            mode = PRIVMSG
-            mode = NOTICE if feed.from.id == @me[:id]
-            name = get_name(:name => feed.from.name, :id => feed.from.id)
-
-            post name, mode, main_channel, feed.to_s(:tid => tid, :color => @opts.color)
-          end
-
-          feed.comments.each do |comment|
-            @duplications.find_or_create_by_object_id comment.id do
-              ctid = @timeline.push([comment.id, feed])
-              cmode = PRIVMSG
-              cmode = NOTICE if comment.from.id == @me[:id]
-              cname = get_name(:name => comment.from.name, :id => comment.from.id)
-              post cname, cmode, main_channel, comment.to_s(:tid => ctid, :color => @opts.color)
-            end
-          end
-
-          feed.likes.each do |like|
-            @duplications.find_or_create_by_object_id like.from.id do
-              lname = get_name(:name => like.from.name, :id => like.from.id)
-              post lname, NOTICE, main_channel, like.to_s(:color => @opts.color)
-            end
-          end if feed.from.id == @me[:id]
-        end
-      rescue Exception => e
-        error_messages(e)
-      end
+      # Nothing
     end
 
+    public
     def get_name(options={})
       if options[:data]
         id   = options[:data]['id']

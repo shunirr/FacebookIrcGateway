@@ -96,7 +96,7 @@ module FacebookIrcGateway
     end
 
     def feed
-      @object.feed['data']
+      Feed.new(@object.feed)
     end
 
     def update(message)
@@ -120,11 +120,7 @@ module FacebookIrcGateway
           begin
             yield
           rescue Exception => e
-            @server.log.error "#{__FILE__}: #{__LINE__}L"
-            @server.log.error e.inspect
-            e.backtrace.each do |l|
-              @server.log.error "\t#{l}"
-            end
+            error_message(e)
           end
 
           sleep interval
@@ -149,73 +145,35 @@ module FacebookIrcGateway
     end
 
     def send_message(item, options = {})
-      id          = item['id']
-      from_id     = item['from']['id']
-      from_name   = item['from']['name'] || server_name
-      tos         = item['to']['data'] if item['to']
-      picture     = item['picture']
-      link        = item['link']
-      name        = item['name']
-      if item['properties']
-        properties = item['properties'].map {|p| p['text'] }
-      end
-      icon        = item['icon']
-      type        = item['type']
-      object_id   = item['object_id']
-      if item['application']
-        app_id    = item['application']['id']
-        app_name  = item['application']['name'] || 'web'
-      end
-      message     = item['message'].to_s
-      caption     = item['caption']
-      description = item['description'].to_s.truncate(100)
-      comments    = item['comments'] && item['comments']['data'] || []
-      likes       = item['likes'] && item['likes']['data'] || []
-
-      check_duplication id do
-        tid = @session.typablemap.push([id, item])
-
-        msgs = []
-        msgs << message
-        msgs << name
-        msgs << caption
-        msgs << description
-
-        tokens = []
-        tokens << msgs.select { |s| !(s.nil? or s.empty?) }.join(' / ')
-        tokens << "#{Utils.shorten_url(link)}" if link
-        tokens << "(#{tid})".irc_colorize(:color => @server.opts.color[:tid]) if tid
-        tokens << "(via #{app_name})".irc_colorize(:color => @server.opts.color[:app_name])
-
-        @session.api.status(id).likes(:create) if @server.opts.autoliker == true
-        method = (from_id == @session.me['id']) ? :notice : :privmsg
-        send method, tokens.join(' '), :from => from_name
-      end
-
-      comments.each do |comment|
-        cid   = comment['id']
-        cname = comment['from']['name']
-        cmes  = Utils.url_filter(comment['message'])
-
-        check_duplication cid do
-          ctid = @session.typablemap.push([cid, item])
-          tokens = [
-            cmes,
-            "(#{ctid})".irc_colorize(:color => @server.opts.color[:tid]),
-            ">> #{from_name}: #{message}".irc_colorize(:color => @server.opts.color[:parent_message])
-          ]
-          method = (comment['from']['id'] == @session.me['id']) ? :notice : :privmsg
-          send method, tokens.join(' '), :from => cname
+      begin
+        check_duplication item.id do
+          tid = @timeline.push([item.id, item])
+          # TODO: auto-liker
+          #@client.status(item.id).likes(:create) if @opts.autoliker == true
+          name = get_name(:name => item.from.name, :id => item.from.id)
+          method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+          send method, item.to_s(:tid => tid, :color => @server.opts.color), :from => name
         end
-      end
 
-      likes.each do |like|
-        lid   = "#{id}_like_#{like['id']}"
-        lname = like['name']
-        check_duplication lid do
-          tokens = [I18n.t('server.like_mark').irc_colorize(:color => @server.opts.color[:like]), "#{from_name}: ", message]
-          notice tokens.join(' '), :from => lname
+        item.comments.each do |comment|
+          check_duplication comment.id do
+            ctid = @timeline.push([comment.id, item])
+            cname = get_name(:name => comment.from.name, :id => comment.from.id)
+            method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+            send method, comment.to_s(:tid => ctid, :color => @server.opts.color), :from => cname
+          end
         end
+
+        item.likes.each do |like|
+          lid = "#{item.id}_like_#{like.from.id}"
+          check_duplication lid do
+            lname = get_name(:name => like.from.name, :id => like.from.id)
+            notice like.to_s(:tid => ctid, :color => @server.opts.color), :from => lname
+          end
+        end if item.from.id == @session.me['id']
+
+      rescue Exception => e
+        error_messages(e)
       end
     end
 
@@ -249,11 +207,28 @@ module FacebookIrcGateway
 
       return true
     end
+
+    # TODO: 暫定移動
+    def get_name(options={})
+      @object.get_name options
+    end
+
+    def set_name(options={})
+      @object.set_name options
+    end
+
+    def error_messages(e)
+      @object.error_messages e
+    end
+    
+    def error_notice(e)
+      @object.error_notice e
+    end
   end
 
   class NewsFeedChannel < Channel
     def feed
-      @object.home['data']
+      Feed.new(@object.home)
     end
   end
 
