@@ -13,11 +13,13 @@ module FacebookIrcGateway
   autoload :CommandManager, 'facebook_irc_gateway/command_manager'
   autoload :Constants, 'facebook_irc_gateway/constants'
   autoload :Duplication, 'facebook_irc_gateway/models/duplication'
+  autoload :UserFilter, 'facebook_irc_gateway/models/user_filter'
   autoload :User, 'facebook_irc_gateway/feed'
   autoload :Feed, 'facebook_irc_gateway/feed'
   autoload :Like, 'facebook_irc_gateway/feed'
   autoload :Comment, 'facebook_irc_gateway/feed'
   autoload :Feeds, 'facebook_irc_gateway/feed'
   autoload :Friends, 'facebook_irc_gateway/feed'
+  autoload :UserFilters, 'facebook_irc_gateway/user_filters'
 end
 
