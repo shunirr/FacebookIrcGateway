@@ -122,7 +122,7 @@ module FacebookIrcGateway
           begin
             yield
           rescue Exception => e
-            error_message(e)
+            error_messages(e)
           end
 
           sleep interval
