@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding: utf-8
 require 'rubygems'
 require 'uri'
 require 'oauth'
@@ -7,7 +7,8 @@ require 'open-uri'
 require 'yaml'
 require 'i18n'
 
-OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+#書き換えるために無理やり
+module OpenSSL::SSL; remove_const :VERIFY_PEER; VERIFY_PEER = VERIFY_NONE; end
 
 module FacebookIrcGateway
   class Server < Net::IRC::Server::Session
