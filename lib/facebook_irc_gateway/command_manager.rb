@@ -77,7 +77,21 @@ module FacebookIrcGateway
         session, channel, id, status = options.values_at(:session, :channel, :id, :status)
         session.api.status(id).likes(:create)
         session.history << {:id => id, :type => :like, :message => status.message}
-        channel.notice "(like) #{status.from.name}: #{status.to_s}"
+
+        # 元発言をさがしている。そもそものデータ構造を直したい
+        name = status.from.name
+        message = status.message
+
+        if status.id != id
+          status.comments.each do |comment|
+            if comment.id == id
+              name = comment.from.name
+              message = comment.message
+            end
+          end
+        end
+
+        channel.notice "#{I18n.t('server.like_mark')} #{name}: #{messages}"
       end
 
       register :undo, :tid => false do |options|
@@ -86,12 +100,17 @@ module FacebookIrcGateway
         if latest
           case latest[:type]
           when :status
-            session.api.send(:_delete, latest[:id])
-            channel.notice "delete at: #{latest[:message]}"
+            delete_at = latest[:id]
+            message = I18n.t('server.delete')
           when :like
-            session.api.send(:_delete, "#{latest[:id]}/likes")
-            channel.notice "unlike at: #{latest[:message]}"
+            delete_at = "#{latest[:id]}/likes"
+            message = I18n.t('server.unlike')
+          else
+            raise ArgumentError, 'Invalid history type'
           end
+
+          session.api.send(:_delete, delete_at)
+          channel.notice "#{message} #{latest[:message]}"
         end
       end
 
@@ -115,8 +134,8 @@ module FacebookIrcGateway
 
       register :unlike do |options|
         session, channel, status, id = options.values_at(:session, :channel, :status, :id)
-        session.api.send(:_delete, "#{id}/likes")
-        channel.notice "unlike at: #{status.message}"
+        session.api.status(id).likes(:destory)
+        channel.notice "#{I18n.t('server.unlike')} #{status.message}"
       end
 
       register :hr do |options|
