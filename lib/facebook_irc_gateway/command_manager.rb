@@ -145,9 +145,13 @@ module FacebookIrcGateway
         session.history << {:id => res['id'], :type => :status, :message => message} if res
       end
 
-      register :alias, :tid => false do |options|
-        session, channel = options.values_at(:session, :channel)
-        channel.notice "Unsupported Command"
+      register :alias do |options|
+        session, channel, status, args = options.values_at(:session, :channel, :status, :args)
+        unless args.nil?
+          old_name = session.user_filter.get_name( :id => status.from.id, :name => status.from.name )
+          session.user_filter.set_name( :id => status.from.id ,:name => args )
+          channel.notice "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{args} #{I18n.t('server.alias_2')}"
+        end
       end
     end
   end

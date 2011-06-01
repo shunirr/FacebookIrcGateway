@@ -1,7 +1,7 @@
 
 module FacebookIrcGateway
   class Session
-    attr_reader :server, :api, :command_manager
+    attr_reader :server, :api, :command_manager, :user_filter
     attr_reader :typablemap, :channels, :options, :history
 
     def initialize(server, api)
@@ -10,6 +10,7 @@ module FacebookIrcGateway
       @me = api.me.info
       @command_manager = CommandManager.new(self)
       @typablemap = TypableMap.new(50 * 50, true)
+      @user_filter = UserFilters.new( @me['id'] )
       @channels = {}
       @options = server.opts # とりあえず参照だけでもこっちでもつ
       @history = []

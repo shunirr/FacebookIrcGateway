@@ -212,11 +212,11 @@ module FacebookIrcGateway
 
     # TODO: 暫定
     def get_name(options={})
-      @server.get_name options
+      @session.user_filter.get_name options
     end
 
     def set_name(options={})
-      @server.set_name options
+      @session.user_filter.set_name options
     end
 
     def error_messages(e)
