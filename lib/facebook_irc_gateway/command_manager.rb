@@ -91,7 +91,7 @@ module FacebookIrcGateway
           end
         end
 
-        channel.notice "#{I18n.t('server.like_mark')} #{name}: #{messages}"
+        channel.notice "#{I18n.t('server.like_mark')} #{name}: #{message}"
       end
 
       register :undo, :tid => false do |options|
