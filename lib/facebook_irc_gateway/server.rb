@@ -59,6 +59,8 @@ module FacebookIrcGateway
         me = @client.me.info
         @me[:id]   = me['id']
         @me[:name] = get_name(:data => me)
+
+        @log.debug "id: #{@me[:id]}, name: #{@me[:name]}"
       rescue Exception => e
         error_messages(e)
       end
