@@ -47,7 +47,7 @@ module FacebookIrcGateway
         error_messages(e)
       end
   
-      @me = {}
+      @me = OpenStruct.new
       begin
         @access_token = agent.authorize(:code => @opts.code)
         @client = FacebookOAuth::Client.new(
@@ -57,10 +57,10 @@ module FacebookIrcGateway
         )
   
         me = @client.me.info
-        @me[:id]   = me['id']
-        @me[:name] = get_name(:data => me)
+        @me.id   = me['id']
+        @me.name = get_name(:data => me)
 
-        @log.debug "id: #{@me[:id]}, name: #{@me[:name]}"
+        @log.debug "id: #{@me.id}, name: #{@me.name}"
       rescue Exception => e
         error_messages(e)
       end
@@ -73,7 +73,7 @@ module FacebookIrcGateway
       @sessions = {}
       @posts = []
       @channels = {}
-      @duplications = Duplication.objects @me[:id]
+      @duplications = Duplication.objects @me.id
     end
   
     def on_user(m)

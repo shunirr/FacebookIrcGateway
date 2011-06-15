@@ -138,6 +138,13 @@ module FacebookIrcGateway
         channel.notice "#{I18n.t('server.unlike')} #{status.message}"
       end
 
+      register :trp do |options|
+        session, channel, status = options.values_at(:session, :channel, :status)
+        message = '（＾－＾）'
+        res = session.api.status(status.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+
       register :hr do |options|
         session, channel, status = options.values_at(:session, :channel, :status)
         message = 'しゃーなしだな！' # ま、しゃーなしだな！
