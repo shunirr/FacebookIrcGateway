@@ -133,6 +133,9 @@ module FacebookIrcGateway
 
       register :trp do |options|
         session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
         message = '（＾－＾）'
         res = session.api.status(object.id).comments(:create, :message => message)
         session.history << {:id => res['id'], :type => :status, :message => message} if res
@@ -140,6 +143,9 @@ module FacebookIrcGateway
 
       register :swr do |options|
         session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
         message = '( ﾟ皿ﾟ)'
         res = session.api.status(object.id).comments(:create, :message => message)
         session.history << {:id => res['id'], :type => :status, :message => message} if res
@@ -147,7 +153,30 @@ module FacebookIrcGateway
 
       register :uoo do |options|
         session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
         message = '┗|┳|┛＜ウオオオォォォ！！！'
+        res = session.api.status(object.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+
+      register :tyr do |options|
+        session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
+        message = "ヽ|'◇'|ﾉ"
+        res = session.api.status(object.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+
+      register :tk do |options|
+        session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
+        message = '└(･ω･)」'
         res = session.api.status(object.id).comments(:create, :message => message)
         session.history << {:id => res['id'], :type => :status, :message => message} if res
       end
