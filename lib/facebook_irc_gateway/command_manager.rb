@@ -132,9 +132,23 @@ module FacebookIrcGateway
       end
 
       register :trp do |options|
-        session, channel, status = options.values_at(:session, :channel, :status)
+        session, channel, object = options.values_at(:session, :channel, :object)
         message = '（＾－＾）'
-        res = session.api.status(status.id).comments(:create, :message => message)
+        res = session.api.status(object.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+
+      register :swr do |options|
+        session, channel, object = options.values_at(:session, :channel, :object)
+        message = '( ﾟ皿ﾟ)'
+        res = session.api.status(object.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+
+      register :uoo do |options|
+        session, channel, object = options.values_at(:session, :channel, :object)
+        message = '┗|┳|┛＜ウオオオォォォ！！！'
+        res = session.api.status(object.id).comments(:create, :message => message)
         session.history << {:id => res['id'], :type => :status, :message => message} if res
       end
 
@@ -155,6 +169,35 @@ module FacebookIrcGateway
           session.user_filter.set_name( :id => object.from.id ,:name => args )
           channel.notice "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{args} #{I18n.t('server.alias_2')}"
         end
+      end
+      
+      # そのユーザーのstatusに対してのコメントを全て非表示にする(コメントを対象とした場合はその元status主を対象にする)
+      register [:comment_invisible, :c_i, :ci ] do |options|
+        session, channel, object  = options.values_at(:session, :channel, :object )
+        if object.instance_of? Comment
+          object = object.parent
+        end
+        val = ! session.user_filter.get_invisible( :type => :comment, :id => object.from.id)
+        session.user_filter.set_invisible :type => :comment, :id => object.from.id, :val => val
+
+        # TODO:I18n化
+        channel.notice "#{object.from.nick}へのコメントを#{ val ? '非表示' : '表示' }にします。"
+      end
+
+      # そのユーザーからのlikeを全て非表示にする
+      register [:like_invisible, :l_i, :li ] do |options|
+        session, channel, object  = options.values_at(:session, :channel, :object )
+
+        val = ! session.user_filter.get_invisible( :type => :like, :id => object.from.id)
+        session.user_filter.set_invisible :type => :like, :id => object.from.id, :val => val
+
+        # TODO:I18n化
+        channel.notice "#{object.from.nick}からのlikeを#{ val ? '非表示' : '表示' }にします。"
+      end
+
+      # tidで指定したstatusのユーザーとアプリケーションの組み合わせをフィルタする
+      register [:app_filter,:af] do |options|
+
       end
     end
   end

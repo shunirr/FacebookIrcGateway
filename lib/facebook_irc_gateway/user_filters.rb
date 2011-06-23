@@ -1,5 +1,6 @@
 module FacebookIrcGateway
   class UserFilters
+    INVISIBLE_TYPES = { :comment => 'comment' , :like => 'like' }
 
     def initialize( uid )
       @user_id = uid
@@ -31,24 +32,31 @@ module FacebookIrcGateway
       record.save
     end
 
-    @@invisible_types = { 'comment' => true ,'like' => true }
     def get_invisible(options={})
       id   = options[:id]
       type = options[:type]
-      if @@invisible_types[ type ] and record = @filter.find_by_object_id( id )
-        return record.instance_variable_get("@invisible_#{type}")
+      result = false
+      
+      record = @filter.find_by_object_id( id )
+      if INVISIBLE_TYPES[ type ] and record
+        result = record.send("invisible_#{INVISIBLE_TYPES[type]}")
       end
-      return false
+      result
     end
 
     def set_invisible(options={})
       id   = options[:id]
       type = options[:type]
-      val  = options[:val] 
+      if options[:val].nil? 
+        val = true
+      else
+        val = options[:val]
+      end
 
-      if @@invisible_types[ type ]
+      if INVISIBLE_TYPES[ type ]
         record = @filter.find_or_initialize_by_object_id( id )
-        record.instance_variable_set("@invisible_#{type}",val)
+        record.send("invisible_#{INVISIBLE_TYPES[type]}=",val)
+        record.save
       end
     end
   end

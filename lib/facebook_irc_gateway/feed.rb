@@ -53,12 +53,14 @@ module FacebookIrcGateway
       @from = User.new(@from['id'], @from['name'],@filter) if @from
       @to = @to['data'].map{|m| User.new(m['id'], m['name'],@filter)}if @to && @to['data']
       @type = @type.to_sym if @type
- 
+
       comments = []
       if @comments and @comments.class == Hash
-        if @comments['data'] and @comments['data'].class == Array
-          @comments['data'].each do |comment|
-            comments << Comment.new(self, comment,@filter)
+        unless @filter.get_invisible( :type => :comment , :id => @from.id ) 
+          if @comments['data'] and @comments['data'].class == Array
+            @comments['data'].each do |comment|
+              comments << Comment.new(self, comment, @filter)
+            end
           end
         end
       end
