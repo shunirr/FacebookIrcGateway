@@ -3,9 +3,12 @@ module FacebookIrcGateway
   class User
     attr :id
     attr :name
-    def initialize(id, name)
+    attr :nick
+
+    def initialize(id, name, filter)
       @id   = id
-      @name = name.gsub(/\s+/, '')
+      @name = name
+      @nick = filter.get_name :id => id, :name => name
     end
   end
 
@@ -18,7 +21,8 @@ module FacebookIrcGateway
     attr :message
     attr :to
     
-    def initialize(data)
+    def initialize(data,filter)
+      @filter = filter
       parse data
     end
 
@@ -46,15 +50,15 @@ module FacebookIrcGateway
       data.each do |k,v|
         eval("@#{k}=v")
       end
-      @from = User.new(@from['id'], @from['name']) if @from
-      @to = @to['data'].map{|m| User.new(m['id'], m['name'])}if @to && @to['data']
+      @from = User.new(@from['id'], @from['name'],@filter) if @from
+      @to = @to['data'].map{|m| User.new(m['id'], m['name'],@filter)}if @to && @to['data']
       @type = @type.to_sym if @type
  
       comments = []
       if @comments and @comments.class == Hash
         if @comments['data'] and @comments['data'].class == Array
           @comments['data'].each do |comment|
-            comments << Comment.new(self, comment)
+            comments << Comment.new(self, comment,@filter)
           end
         end
       end
@@ -64,7 +68,7 @@ module FacebookIrcGateway
       if @likes and @likes.class == Hash
         if @likes['data'] and @likes['data'].class == Array
           @likes['data'].each do |like|
-            likes << Like.new(self, like)
+            likes << Like.new(self, like,@filter)
           end
         end
       end
@@ -99,8 +103,8 @@ module FacebookIrcGateway
 
   class Like < Entry
     attr :parent
-    def initialize(parent, data)
-      super data
+    def initialize(parent, data, filter)
+      super data,filter
       @parent = parent
     end
 
@@ -117,14 +121,14 @@ module FacebookIrcGateway
     private
     def parse(data)
       super
-      @from = User.new(@id, @name)
+      @from = User.new(@id, @name,@filter)
     end
   end
 
   class Comment < Entry
     attr :parent
-    def initialize(parent, data)
-      super data
+    def initialize(parent, data, filter)
+      super data,filter
       @parent = parent
     end
 
@@ -133,7 +137,7 @@ module FacebookIrcGateway
 
       color = options[:color] || {}
       tokens << "(#{options[:tid]})".irc_colorize(:color => color[:tid]) if color[:tid]
-      mes = ">> #{@parent.from.name}: #{@parent.to_s}"
+      mes = ">> #{@parent.from.nick}: #{@parent.to_s}"
       tokens << mes.irc_colorize(:color => color[:parent_message])
       tokens.join(' ')
     end
@@ -146,11 +150,11 @@ module FacebookIrcGateway
   end
 
   class Feed < Array
-    def initialize(data)
+    def initialize(data,filter)
       items = data['data']
       unless items.nil?
         items.each do |d|
-          self << Entry.new(d)
+          self << Entry.new(d,filter)
         end
       end
     end
@@ -158,9 +162,9 @@ module FacebookIrcGateway
 
   # TODO: このファイルにあるのはおかしいので後で移動する
   class Friends < Array
-    def initialize(data)
+    def initialize(data,filter)
       data['data'].each do |i|
-        self << User.new(i['id'], i['name'])
+        self << User.new(i['id'], i['name'],filter)
       end
     end
   end

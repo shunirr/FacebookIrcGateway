@@ -97,7 +97,7 @@ module FacebookIrcGateway
     end
 
     def feed
-      Feed.new(@object.feed)
+      Feed.new(@object.feed,@session.user_filter)
     end
 
     def update(message)
@@ -148,29 +148,26 @@ module FacebookIrcGateway
 
     def send_message(item, options = {})
       begin
-        name = get_name :id => item.from.id, :name => item.from.name
         check_duplication item.id do
           tid = @session.typablemap.push(item)
           # TODO: auto-liker
           #@client.status(item.id).likes(:create) if @opts.autoliker == true
           method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => name
+          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
         end
 
         item.comments.each do |comment|
           check_duplication comment.id do
             ctid = @session.typablemap.push(comment)
-            cname = get_name :id => comment.from.id, :name => comment.from.name
             method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
-            send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => cname
+            send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
           end
         end
 
         item.likes.each do |like|
           lid = "#{item.id}_like_#{like.from.id}"
           check_duplication lid do
-            lname = get_name :id => like.from.id, :name => like.from.name
-            notice like.to_s(:color => @session.options.color), :from => lname
+            notice like.to_s(:color => @session.options.color), :from => like.from.nick
           end
         end if item.from.id == @session.me['id']
 
@@ -210,15 +207,6 @@ module FacebookIrcGateway
       return true
     end
 
-    # TODO: 暫定
-    def get_name(options={})
-      @session.user_filter.get_name options
-    end
-
-    def set_name(options={})
-      @session.user_filter.set_name options
-    end
-
     def error_messages(e)
       @server.error_messages e
     end
@@ -230,7 +218,7 @@ module FacebookIrcGateway
 
   class NewsFeedChannel < Channel
     def feed
-      Feed.new(@object.home)
+      Feed.new(@object.home,@session.user_filter)
     end
   end
 

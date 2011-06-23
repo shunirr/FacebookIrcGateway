@@ -81,7 +81,7 @@ module FacebookIrcGateway
         session, channel, object = options.values_at(:session, :channel, :object)
         session.api.status(object.id).likes(:create)
         session.history << {:id => object.id, :type => :like, :message => object.message}
-        channel.notice "#{I18n.t('server.like_mark')} #{object.from.name}: #{object.to_s}"
+        channel.notice "#{I18n.t('server.like_mark')} #{object.from.nick}: #{object.to_s}"
       end
 
       register :undo, :tid => false do |options|
@@ -110,7 +110,7 @@ module FacebookIrcGateway
           object = object.parent
         end
         unless object.comments.empty?
-          channel.notice object.message, :from => object.from.name
+          channel.notice object.message, :from => object.from.nick
 
           size = object.comments.size
           begin
@@ -120,7 +120,7 @@ module FacebookIrcGateway
           end
 
           object.comments[start...size].each do |comment|
-            channel.notice comment.message, :from => comment.from.name
+            channel.notice comment.message, :from => comment.from.nick
           end
         end
       end
@@ -151,7 +151,7 @@ module FacebookIrcGateway
       register :alias do |options|
         session, channel, object, args = options.values_at(:session, :channel, :object, :args)
         unless args.nil?
-          old_name = session.user_filter.get_name( :id => object.from.id, :name => object.from.name )
+          old_name = session.user_filter.get_name( :id => object.from.id, :name => object.from.nick )
           session.user_filter.set_name( :id => object.from.id ,:name => args )
           channel.notice "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{args} #{I18n.t('server.alias_2')}"
         end

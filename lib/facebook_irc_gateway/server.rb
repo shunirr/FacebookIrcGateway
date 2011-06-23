@@ -58,7 +58,8 @@ module FacebookIrcGateway
   
         me = @client.me.info
         @me.id   = me['id']
-        @me.name = get_name(:data => me)
+        # TODO:aliasを適用する
+        @me.name = me['name'].gsub(/\s+/, '')
 
         @log.debug "id: #{@me.id}, name: #{@me.name}"
       rescue Exception => e
@@ -137,7 +138,8 @@ module FacebookIrcGateway
       friends = []
       @client.me.friends['data'].each do |i|
         id   = i['id']
-        name = get_name(:data => i)
+        # TODO:aliasを適用する
+        name = i['name'].gsub(/\s+/, '')
         friends << {:id => id, :name => name}
       end
 
