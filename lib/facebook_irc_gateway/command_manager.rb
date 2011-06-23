@@ -81,7 +81,7 @@ module FacebookIrcGateway
         session, channel, object = options.values_at(:session, :channel, :object)
         session.api.status(object.id).likes(:create)
         session.history << {:id => object.id, :type => :like, :message => object.message}
-        channel.notice "(like) #{object.from.name}: #{object.to_s}"
+        channel.notice "#{I18n.t('server.like_mark')} #{object.from.name}: #{object.to_s}"
       end
 
       register :undo, :tid => false do |options|
@@ -90,12 +90,17 @@ module FacebookIrcGateway
         if latest
           case latest[:type]
           when :status
-            session.api.send(:_delete, latest[:id])
-            channel.notice "delete at: #{latest[:message]}"
+            delete_at = latest[:id]
+            message = I18n.t('server.delete')
           when :like
-            session.api.send(:_delete, "#{latest[:id]}/likes")
-            channel.notice "unlike at: #{latest[:message]}"
+            delete_at = "#{latest[:id]}/likes"
+            message = I18n.t('server.unlike')
+          else
+            raise ArgumentError, 'Invalid history type'
           end
+
+          session.api.send(:_delete, delete_at)
+          channel.notice "#{message} #{latest[:message]}"
         end
       end
 
@@ -123,7 +128,14 @@ module FacebookIrcGateway
       register :unlike do |options|
         session, channel, object = options.values_at(:session, :channel, :object )
         session.api.send(:_delete, "#{object.id}/likes")
-        channel.notice "unlike at: #{object.message}"
+        channel.notice "#{I18n.t('server.unlike')} #{object.message}"
+      end
+
+      register :trp do |options|
+        session, channel, status = options.values_at(:session, :channel, :status)
+        message = '（＾－＾）'
+        res = session.api.status(status.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
       end
 
       register :hr do |options|
