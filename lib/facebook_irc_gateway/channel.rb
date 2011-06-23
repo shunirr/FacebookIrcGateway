@@ -150,7 +150,7 @@ module FacebookIrcGateway
       begin
         name = get_name :id => item.from.id, :name => item.from.name
         check_duplication item.id do
-          tid = @session.typablemap.push([item.id, item])
+          tid = @session.typablemap.push(item)
           # TODO: auto-liker
           #@client.status(item.id).likes(:create) if @opts.autoliker == true
           method = (item.from.id == @session.me['id']) ? :notice : :privmsg
@@ -159,7 +159,7 @@ module FacebookIrcGateway
 
         item.comments.each do |comment|
           check_duplication comment.id do
-            ctid = @session.typablemap.push([comment.id, item])
+            ctid = @session.typablemap.push(comment)
             cname = get_name :id => comment.from.id, :name => comment.from.name
             method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
             send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => cname

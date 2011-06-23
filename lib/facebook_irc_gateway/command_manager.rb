@@ -29,8 +29,9 @@ module FacebookIrcGateway
 
       commands = @command_map[name] || []
       if not commands.empty?
-        id, status = @session.typablemap[tid]
-        if tid and status.nil?
+        object = @session.typablemap[tid]
+
+        if tid and object.nil?
           # 残念、さやかちゃんでした！
           channel.notice I18n.t('server.invalid_typablemap')
           cancel = true
@@ -42,8 +43,7 @@ module FacebookIrcGateway
 
             begin
               block.call(
-                :id => id,
-                :status => status,
+                :object => object,
                 :tid => tid,
                 :args => args,
                 :channel => channel,
@@ -68,16 +68,20 @@ module FacebookIrcGateway
 
     def register_builtins
       register :re do |options|
-        session, channel, status, args = options.values_at(:session, :channel, :status, :args)
-        res = session.api.status(status.id).comments(:create, :message => args)
+        session, channel, object, args = options.values_at(:session, :channel, :object, :args)
+        if object.is_a? Comment
+          object = object.parent
+        end
+
+        res = session.api.status(object.id).comments(:create, :message => args)
         session.history << {:id => res['id'], :type => :status, :message => args} if res
       end
 
       register [:like, :fav, :arr] do |options|
-        session, channel, id, status = options.values_at(:session, :channel, :id, :status)
-        session.api.status(id).likes(:create)
-        session.history << {:id => id, :type => :like, :message => status.message}
-        channel.notice "(like) #{status.from.name}: #{status.to_s}"
+        session, channel, object = options.values_at(:session, :channel, :object)
+        session.api.status(object.id).likes(:create)
+        session.history << {:id => object.id, :type => :like, :message => object.message}
+        channel.notice "(like) #{object.from.name}: #{object.to_s}"
       end
 
       register :undo, :tid => false do |options|
@@ -96,41 +100,47 @@ module FacebookIrcGateway
       end
 
       register :rres do |options|
-        session, channel, status, args = options.values_at(:session, :channel, :status, :args)
-        unless status.comments.empty?
-          channel.notice status.message, :from => status.from.name
+        session, channel, object, args = options.values_at(:session, :channel, :object, :args)
+        if object.is_a? Comment
+          object = object.parent
+        end
+        unless object.comments.empty?
+          channel.notice object.message, :from => object.from.name
 
-          size = status.comments.size
+          size = object.comments.size
           begin
             start = size - ((args.nil?) ? size : args.to_i)
           rescue => e
             channel.notice I18n.t('server.invalid_typablemap')
           end
 
-          status.comments[start...size].each do |comment|
+          object.comments[start...size].each do |comment|
             channel.notice comment.message, :from => comment.from.name
           end
         end
       end
 
       register :unlike do |options|
-        session, channel, status, id = options.values_at(:session, :channel, :status, :id)
-        session.api.send(:_delete, "#{id}/likes")
-        channel.notice "unlike at: #{status.message}"
+        session, channel, object = options.values_at(:session, :channel, :object )
+        session.api.send(:_delete, "#{object.id}/likes")
+        channel.notice "unlike at: #{object.message}"
       end
 
       register :hr do |options|
-        session, channel, status = options.values_at(:session, :channel, :status)
+        session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
         message = 'しゃーなしだな！' # ま、しゃーなしだな！
-        res = session.api.status(status.id).comments(:create, :message => message)
+        res = session.api.status(object.id).comments(:create, :message => message)
         session.history << {:id => res['id'], :type => :status, :message => message} if res
       end
 
       register :alias do |options|
-        session, channel, status, args = options.values_at(:session, :channel, :status, :args)
+        session, channel, object, args = options.values_at(:session, :channel, :object, :args)
         unless args.nil?
-          old_name = session.user_filter.get_name( :id => status.from.id, :name => status.from.name )
-          session.user_filter.set_name( :id => status.from.id ,:name => args )
+          old_name = session.user_filter.get_name( :id => object.from.id, :name => object.from.name )
+          session.user_filter.set_name( :id => object.from.id ,:name => args )
           channel.notice "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{args} #{I18n.t('server.alias_2')}"
         end
       end

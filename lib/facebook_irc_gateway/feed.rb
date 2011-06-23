@@ -98,6 +98,7 @@ module FacebookIrcGateway
   end
 
   class Like < Entry
+    attr :parent
     def initialize(parent, data)
       super data
       @parent = parent
@@ -121,6 +122,7 @@ module FacebookIrcGateway
   end
 
   class Comment < Entry
+    attr :parent
     def initialize(parent, data)
       super data
       @parent = parent
