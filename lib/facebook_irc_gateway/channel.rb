@@ -158,7 +158,7 @@ module FacebookIrcGateway
 
         item.comments.each do |comment|
           check_duplication comment.id do
-            unless @session.user_filter.get_invisible( :type => :comment , :id => coment.parent.from.id )
+            unless @session.user_filter.get_invisible( :type => :comment , :id => comment.parent.from.id )
               ctid = @session.typablemap.push(comment)
               method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
               send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
