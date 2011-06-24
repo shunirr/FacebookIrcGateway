@@ -66,6 +66,17 @@ module FacebookIrcGateway
 
     private
 
+    def simple_reply(names, message)
+      register names do |options|
+        session, channel, object = options.values_at(:session, :channel, :object)
+        if object.is_a? Comment
+          object = object.parent
+        end
+        res = session.api.status(object.id).comments(:create, :message => message)
+        session.history << {:id => res['id'], :type => :status, :message => message} if res
+      end
+    end
+
     def register_builtins
       register :re do |options|
         session, channel, object, args = options.values_at(:session, :channel, :object, :args)
@@ -131,66 +142,6 @@ module FacebookIrcGateway
         channel.notice "#{I18n.t('server.unlike')} #{object.message}"
       end
 
-      register :trp do |options|
-        session, channel, object = options.values_at(:session, :channel, :object)
-        if object.is_a? Comment
-          object = object.parent
-        end
-        message = '（＾－＾）'
-        res = session.api.status(object.id).comments(:create, :message => message)
-        session.history << {:id => res['id'], :type => :status, :message => message} if res
-      end
-
-      register :swr do |options|
-        session, channel, object = options.values_at(:session, :channel, :object)
-        if object.is_a? Comment
-          object = object.parent
-        end
-        message = '( ﾟ皿ﾟ)'
-        res = session.api.status(object.id).comments(:create, :message => message)
-        session.history << {:id => res['id'], :type => :status, :message => message} if res
-      end
-
-      register :uoo do |options|
-        session, channel, object = options.values_at(:session, :channel, :object)
-        if object.is_a? Comment
-          object = object.parent
-        end
-        message = '┗|┳|┛＜ウオオオォォォ！！！'
-        res = session.api.status(object.id).comments(:create, :message => message)
-        session.history << {:id => res['id'], :type => :status, :message => message} if res
-      end
-
-      register :tyr do |options|
-        session, channel, object = options.values_at(:session, :channel, :object)
-        if object.is_a? Comment
-          object = object.parent
-        end
-        message = "ヽ|'◇'|ﾉ"
-        res = session.api.status(object.id).comments(:create, :message => message)
-        session.history << {:id => res['id'], :type => :status, :message => message} if res
-      end
-
-      register :tk do |options|
-        session, channel, object = options.values_at(:session, :channel, :object)
-        if object.is_a? Comment
-          object = object.parent
-        end
-        message = '└(･ω･)」'
-        res = session.api.status(object.id).comments(:create, :message => message)
-        session.history << {:id => res['id'], :type => :status, :message => message} if res
-      end
-
-      register :hr do |options|
-        session, channel, object = options.values_at(:session, :channel, :object)
-        if object.is_a? Comment
-          object = object.parent
-        end
-        message = 'しゃーなしだな！' # ま、しゃーなしだな！
-        res = session.api.status(object.id).comments(:create, :message => message)
-        session.history << {:id => res['id'], :type => :status, :message => message} if res
-      end
-
       register :alias do |options|
         session, channel, object, args = options.values_at(:session, :channel, :object, :args)
         unless args.nil?
@@ -228,6 +179,13 @@ module FacebookIrcGateway
       register [:app_filter,:af] do |options|
 
       end
+
+      simple_reply :trp, '（＾－＾）'
+      simple_reply :swr, '( ﾟ皿ﾟ)'
+      simple_reply :uoo, '┗|┳|┛＜ウオオオォォォ！！！'
+      simple_reply :tyr, "ヽ|'◇'|ﾉ"
+      simple_reply :tk, '└(･ω･)」'
+      simple_reply :hr, 'しゃーなしだな！'
     end
   end
 end
