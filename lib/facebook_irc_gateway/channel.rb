@@ -158,16 +158,20 @@ module FacebookIrcGateway
 
         item.comments.each do |comment|
           check_duplication comment.id do
-            ctid = @session.typablemap.push(comment)
-            method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
-            send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
+            unless @session.user_filter.get_invisible( :type => :comment , :id => coment.parent.from.id )
+              ctid = @session.typablemap.push(comment)
+              method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
+              send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
+            end
           end
         end
 
         item.likes.each do |like|
           lid = "#{item.id}_like_#{like.from.id}"
           check_duplication lid do
-            notice like.to_s(:color => @session.options.color), :from => like.from.nick
+            unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
+              notice like.to_s(:color => @session.options.color), :from => like.from.nick
+            end
           end
         end if item.from.id == @session.me['id']
 

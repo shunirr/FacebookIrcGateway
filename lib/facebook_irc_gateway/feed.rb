@@ -56,11 +56,9 @@ module FacebookIrcGateway
 
       comments = []
       if @comments and @comments.class == Hash
-        unless @filter.get_invisible( :type => :comment , :id => @from.id ) 
-          if @comments['data'] and @comments['data'].class == Array
-            @comments['data'].each do |comment|
-              comments << Comment.new(self, comment, @filter)
-            end
+        if @comments['data'] and @comments['data'].class == Array
+          @comments['data'].each do |comment|
+            comments << Comment.new(self, comment, @filter)
           end
         end
       end
