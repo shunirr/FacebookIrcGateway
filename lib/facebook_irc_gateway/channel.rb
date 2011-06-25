@@ -17,12 +17,14 @@ module FacebookIrcGateway
       'checkins'
     ]
 
-    attr_reader :server, :session, :name, :object
+    attr_reader :server, :session, :name, :mode, :object
 
-    def initialize(server, session, name)
+    def initialize(server, session, name, oid = nil)
       @server = server
       @session = session
       @name = name
+      @mode = nil
+      @oid = oid
       @object = nil
     end
 
@@ -65,6 +67,19 @@ module FacebookIrcGateway
     end
     # }}}
 
+    # Record {{{1
+    def save
+      Model::Channel.where(:uid => @session.me['id']).find_or_initialize_by_name(@name).update_attributes({
+        :mode => @mode,
+        :oid => @oid
+      })
+    end
+
+    def destroy
+      Model::Channel.where(:uid => @session.me['id'], :name => @name).destroy
+    end
+    # }}}1
+
     def has_object?
       not @object.nil?
     end
@@ -76,11 +91,12 @@ module FacebookIrcGateway
     end
     # }}}
 
-    def start(id)
-      @object = FacebookOAuth::FacebookObject.new(id, @session.api)
-      @duplications = Duplication.objects(id)
+    def start(oid)
+      @oid = oid
+      @object = FacebookOAuth::FacebookObject.new(@oid, @session.api)
+      @duplications = Duplication.objects(oid)
 
-      notice "start: #{object_name @object.info} (#{id})"
+      notice "start: #{object_name @object.info} (#{@oid})"
 
       stop
       @check_feed_thread = async do
@@ -97,7 +113,7 @@ module FacebookIrcGateway
     end
 
     def feed
-      Feed.new(@object.feed,@session.user_filter)
+      Feed.new(@object.feed, @session.user_filter)
     end
 
     def update(message)
@@ -202,6 +218,7 @@ module FacebookIrcGateway
           item = items[args.to_i - 1]
           if item
             start item['id']
+            save
           else
             notice 'invalid argument'
           end
@@ -221,8 +238,15 @@ module FacebookIrcGateway
   end
 
   class NewsFeedChannel < Channel
+    def save
+      # 保存しない
+    end
+
+    def destroy
+    end
+
     def feed
-      Feed.new(@object.home,@session.user_filter)
+      Feed.new(@object.home, @session.user_filter)
     end
   end
 
