@@ -78,6 +78,7 @@ module FacebookIrcGateway
     end
 
     def on_message(m)
+      return if not ''.respond_to? :force_encoding
       enc = 'UTF-8'
       m.prefix.force_encoding(enc)
       m.command.force_encoding(enc)
