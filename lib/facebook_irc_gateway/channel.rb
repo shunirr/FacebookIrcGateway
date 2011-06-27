@@ -76,7 +76,7 @@ module FacebookIrcGateway
     end
 
     def destroy
-      Model::Channel.where(:uid => @session.me['id'], :name => @name).destroy
+      Model::Channel.where(:uid => @session.me['id'], :name => @name).destroy_all
     end
     # }}}1
 
