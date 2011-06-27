@@ -76,6 +76,13 @@ module FacebookIrcGateway
       @channels = {}
       @duplications = Duplication.objects @me.id
     end
+
+    def on_message(m)
+      enc = 'UTF-8'
+      m.prefix.force_encoding(enc)
+      m.command.force_encoding(enc)
+      m.params.each {|param| param.force_encoding(enc)}
+    end
   
     def on_user(m)
       super
