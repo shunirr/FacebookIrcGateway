@@ -3,6 +3,7 @@ require 'rspec/core/rake_task'
 require 'active_record'
 require 'active_support'
 require 'yaml'
+require 'bundler/gem_tasks'
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -22,7 +23,7 @@ namespace :db do
   def create_database(config)
     if File.exist? config['database']
       $stderr.puts "#{config['database']} already exists"
-      return 
+      return
     end
     ActiveRecord::Base.connection
   end
@@ -36,7 +37,7 @@ namespace :db do
       $stderr.puts "Couldn't drop #{config['database']} : #{e.inspect}"
     end
   end
-  
+ 
   def drop_database(config)
     FileUtils.rm(config['database'])
   end
