@@ -97,4 +97,5 @@ https://github.com/shunirr/FacebookIrcGateway/wiki/Home_ja
 
 （＾－＾）
 （＾－＾）
+（＾－＾）
 
