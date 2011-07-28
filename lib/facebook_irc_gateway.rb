@@ -11,6 +11,7 @@ module FacebookIrcGateway
   autoload :Duplication, 'facebook_irc_gateway/models/duplication'
   autoload :UserFilter, 'facebook_irc_gateway/models/user_filter'
   autoload :Runner, 'facebook_irc_gateway/runner'
+  autoload :Setup, 'facebook_irc_gateway/setup'
 
   autoload :Server,  'facebook_irc_gateway/server'
   autoload :Session,  'facebook_irc_gateway/session'

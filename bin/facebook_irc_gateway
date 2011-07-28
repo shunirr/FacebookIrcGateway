@@ -8,5 +8,9 @@ end
 
 require 'facebook_irc_gateway'
 
-
-FacebookIrcGateway::Runner.run
+if ARGV.first == 'setup'
+  ARGV.shift
+  FacebookIrcGateway::Setup.run
+else
+  FacebookIrcGateway::Runner.run
+end
