@@ -99,16 +99,15 @@ module FacebookIrcGateway
       notice "start: #{object_name @object.info} (#{@oid})"
 
       stop
-      @check_feed_thread = async do
+      @check_feed_timer = async do
         check_feed
       end
     end
 
     def stop
-      if @check_feed_thread
-        @check_feed_thread.exit
-        @check_feed_thread.join
-        @check_feed_thread = nil
+      if @check_feed_timer
+        @check_feed_timer.cancel
+        @check_feed_timer = nil
       end
     end
 
@@ -128,27 +127,23 @@ module FacebookIrcGateway
     private
 
     def async(options = {})
-      @server.log.debug 'begin: async'
-      count = options[:count] || 0
+      count = options[:count]
       interval = options[:interval] || 30
 
-      return Thread.start do
-        loop do
-          if count > 0
-            count -= 1
-            break if count == 0
-          end
+      # 初回は即時実行させるために nil を指定する
+      timer = EventMachine.add_periodic_timer nil do
+        timer.interval = interval
+        count -= 1 unless count.nil?
+        timer.cancel if count == 0
 
-          begin
-            yield
-          rescue Exception => e
-            error_messages(e)
-          end
-
-          sleep interval
+        begin
+          yield
+        rescue Exception => e
+          error_messages(e)
         end
-        @server.log.debug 'end: async'
       end
+
+      return timer
     end
 
     def check_duplication(id)
