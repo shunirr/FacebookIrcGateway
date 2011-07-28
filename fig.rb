@@ -9,6 +9,7 @@ Bundler.require
 require 'optparse'
 require 'yaml'
 require 'logger'
+require 'eventmachine'
 
 require 'facebook_irc_gateway'
 
@@ -78,5 +79,6 @@ opts[:logger].level  = Logger::DEBUG
 
 system('rake db:migrate')
 
-Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start
+Thread.start { Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start }
+EventMachine.run
 

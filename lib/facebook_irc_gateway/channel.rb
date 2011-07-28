@@ -117,8 +117,12 @@ module FacebookIrcGateway
     end
 
     def update(message)
-      status = @object.feed(:create, :message => message)
-      @session.history << {:id => status['id'], :type => :status, :message => message} if status
+      @session.defer do
+        status = @object.feed(:create, :message => message)
+        @session.history << {:id => status['id'], :type => :status, :message => message} if status
+        notice '遅延キューが実行されました'
+      end
+      notice '遅延キューに登録しました'
     end
 
     private

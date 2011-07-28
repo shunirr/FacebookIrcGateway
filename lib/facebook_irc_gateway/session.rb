@@ -3,6 +3,7 @@ module FacebookIrcGateway
   class Session
     attr_reader :server, :api, :command_manager, :user_filter
     attr_reader :typablemap, :channels, :options, :history
+    attr_reader :deferred_queue
 
     def initialize(server, api)
       @server = server
@@ -15,6 +16,8 @@ module FacebookIrcGateway
       @options = server.opts # とりあえず参照だけでもこっちでもつ
       @history = []
 
+      @deferred_queue = []
+
       # join channels
       Model::Channel.where(:uid => @me['id']).each do |channel|
         join channel.name, :mode => channel.mode, :oid => channel.oid
@@ -22,6 +25,30 @@ module FacebookIrcGateway
 
       # join newsfeed
       join @server.main_channel, :type => NewsFeedChannel, :oid => 'me'
+    end
+
+    def defer(options = {}, &block)
+      args = options[:args]
+      delay = options[:delay] || 10
+      errback = options[:errback]
+
+      deferrable = EventMachine::DefaultDeferrable.new
+      deferrable.callback do |*args|
+        p 'on callback'
+        @deferred_queue.delete_if {|d| d === deferrable}
+        block.call args 
+      end
+      deferrable.errback do |*args|
+        p 'on errback'
+        @deferred_queue.delete_if {|d| d === deferrable}
+        errback.call args  if errback
+      end
+
+      @deferred_queue.push deferrable
+      EventMachine.add_timer delay do
+        p 'on timer'
+        deferrable.succeed args
+      end
     end
 
     def me(force = false)
