@@ -88,6 +88,9 @@ module FacebookIrcGateway
           res = session.api.status(object.id).comments(:create, :message => args)
           session.history << {:id => res['id'], :type => :status, :message => args} if res
         end
+
+        # とりあえず
+        channel.notice "#{args} >> #{object.from.nick}: #{object.message}"
       end
 
       register [:like, :fav, :arr] do |options|
