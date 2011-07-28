@@ -98,7 +98,7 @@ module FacebookIrcGateway
     def on_privmsg(m)
       name, message = m.params
       session = find_session m
-      Thread.start do
+      EventMachine.defer do
         begin
           session.on_privmsg name, message
         rescue Exception => e
