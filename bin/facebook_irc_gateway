@@ -7,4 +7,6 @@ rescue LoadError
 end
 
 require 'facebook_irc_gateway'
+
+
 FacebookIrcGateway::Runner.run

@@ -10,6 +10,7 @@ module FacebookIrcGateway
       require 'optparse'
       require 'yaml'
       require 'logger'
+      require 'pit'
 
 
       pit = Pit.get("facebook_irc_gateway", :require => {
@@ -58,7 +59,7 @@ module FacebookIrcGateway
 
       opts[:host]          = '127.0.0.1'     if opts[:host].nil?
       opts[:port]          = 16822           if opts[:port].nil?
-      opts[:userlist]      = 'userlist.yaml' if opts[:userlist].nil?
+      opts[:userlist]      = "#{Gem.datadir('facebook_irc_gateway')}/userlist.yaml" if opts[:userlist].nil?
       opts[:autoliker]     = false           if opts[:autoliker].nil?
       opts[:locale]        = 'en'            if opts[:locale].nil?
       opts[:locale]        = opts[:locale].to_sym
@@ -67,7 +68,7 @@ module FacebookIrcGateway
       opts[:color][:app_name] = :teal        if opts[:color][:app_name].nil?
       opts[:color][:like]  = :teal           if opts[:color][:like].nil?
       opts[:color][:parent_message]  = :grey if opts[:color][:parent_message].nil?
-      opts[:db] = YAML.load_file('database.yml')
+      opts[:db] = YAML.load_file("#{Gem.datadir('facebook_irc_gateway')}/database.yml")
       opts[:suffix]        = ''              if opts[:suffix].nil?
       opts[:app_id]        = pit['id']
       opts[:app_secret]    = pit['secret']
