@@ -22,7 +22,7 @@ module FacebookIrcGateway
     end
   
     def server_version
-      '0.0.1'
+      '0.5.0
     end
   
     def main_channel
