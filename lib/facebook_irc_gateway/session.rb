@@ -34,19 +34,16 @@ module FacebookIrcGateway
 
       deferrable = EventMachine::DefaultDeferrable.new
       deferrable.callback do |*args|
-        p 'on callback'
         @deferred_queue.delete_if {|d| d === deferrable}
         block.call args 
       end
       deferrable.errback do |*args|
-        p 'on errback'
         @deferred_queue.delete_if {|d| d === deferrable}
         errback.call args  if errback
       end
 
       @deferred_queue.push deferrable
       EventMachine.add_timer delay do
-        p 'on timer'
         deferrable.succeed args
       end
     end

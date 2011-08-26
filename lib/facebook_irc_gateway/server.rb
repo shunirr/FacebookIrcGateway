@@ -171,33 +171,14 @@ module FacebookIrcGateway
         @friends = friends
       end
     end
-    
+
     def error_messages(e)
-      error_notice(e)
+      post server_name, NOTICE, main_channel, Utils.exception_to_messag(e)
+
       @log.error e.inspect
       e.backtrace.each do |l|
         @log.error "\t#{l}"
       end
-    end
-    
-    def error_notice(e)
-      case e
-      when OAuth2::HTTPError
-        post server_name, NOTICE, main_channel, I18n.t('error.oauth2_http')
-      when NoMethodError
-        if e.to_s =~ /undefined\smethod\s.me.\sfor\snil:NilClass/
-          post server_name, NOTICE, main_channel, I18n.t('error.no_method_me')
-        end
-      when SocketError
-        post server_name, NOTICE, main_channel, I18n.t('error.socket')
-      end
-    end
-
-    def get_error_body(e)
-      env = e.response.env if e and e.response and e.response.env
-      env_body = JSON.parse(env[:body]) if env
-      err_mes = env_body['error']['message'] if env_body and env_body['error'] and env_body['error']['message']
-      err_mes
     end
   end
 end

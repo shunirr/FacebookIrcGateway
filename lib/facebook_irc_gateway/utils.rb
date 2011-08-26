@@ -2,6 +2,7 @@
 
 require 'net/https'
 require 'json'
+require 'pp'
 Net::HTTP.version_1_2
 
 module FacebookIrcGateway
@@ -29,6 +30,24 @@ module FacebookIrcGateway
           puts e.inspect
           url
         end
+      end
+    end
+
+    def self.exception_to_message(e)
+      case e
+      when OAuth2::HTTPError
+        if e.response and e.response.env and e.response.env.key? :body
+          body = JSON.parse(e.response.env[:body])
+          if body and body.key? 'error'
+            error = body['error']
+            if error
+              return error['message'] if error['message']
+            end
+          end
+        end
+        return I18n.t('error.oauth2_http')
+      else
+        return e.to_s
       end
     end
 

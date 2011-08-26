@@ -1,7 +1,5 @@
 # coding: utf-8
 
-require 'pp'
-
 module FacebookIrcGateway
   class Channel
 
@@ -120,23 +118,26 @@ module FacebookIrcGateway
 
     def update(message)
       @session.defer do
-        status = nil
         begin
           status = @object.feed(:create, :message => message)
           @session.history << {:id => status['id'], :type => :status, :message => message} if status
-        rescue OAuth2::HTTPError => e
-          message = get_error_body e
-          notice message if message
-        rescue => e
-          error_messages(e)
-          notice 'Failed to update message'
+          #notice '遅延キューが実行されました'
+        rescue Exception => e
+          send_error_message e
         end
-        # notice '遅延キューが実行されました'
       end
-      # notice '遅延キューに登録しました'
+      #notice '遅延キューに登録しました'
     end
 
     private
+
+    def send_error_message(e)
+      notice Utils.exception_to_message(e)
+      @server.log.error e.inspect
+      e.backtrace.each do |l|
+        @server.log.error "\t#{l}"
+      end
+    end
 
     def async(options = {})
       count = options[:count]
@@ -151,7 +152,7 @@ module FacebookIrcGateway
         begin
           yield
         rescue Exception => e
-          error_messages(e)
+          send_error_message e
         end
       end
 
@@ -166,48 +167,38 @@ module FacebookIrcGateway
     end
 
     def check_feed
-      #@server.log.debug 'begin: check_feed'
       feed.reverse.each do |item|
         send_message item
       end
-      #@server.log.debug 'end: check_feed'
     end
 
     def send_message(item, options = {})
-      begin
-        check_duplication item.id do
-          tid = @session.typablemap.push(item)
-          # TODO: auto-liker
-          #@client.status(item.id).likes(:create) if @opts.autoliker == true
-          method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
-        end
-
-        item.comments.each do |comment|
-          check_duplication comment.id do
-            unless @session.user_filter.get_invisible( :type => :comment , :id => comment.parent.from.id )
-              ctid = @session.typablemap.push(comment)
-              method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
-              send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
-            end
-          end
-        end
-
-        item.likes.each do |like|
-          lid = "#{item.id}_like_#{like.from.id}"
-          check_duplication lid do
-            unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
-              notice like.to_s(:color => @session.options.color), :from => like.from.nick
-            end
-          end
-        end if item.from.id == @session.me['id']
-
-      rescue OAuth2::HTTPError => e
-        message = get_error_body e
-        notice message if message
-      rescue Exception => e
-        error_messages(e)
+      check_duplication item.id do
+        tid = @session.typablemap.push(item)
+        # TODO: auto-liker
+        #@client.status(item.id).likes(:create) if @opts.autoliker == true
+        method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+        send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
       end
+
+      item.comments.each do |comment|
+        check_duplication comment.id do
+          unless @session.user_filter.get_invisible( :type => :comment , :id => comment.parent.from.id )
+            ctid = @session.typablemap.push(comment)
+            method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
+            send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
+          end
+        end
+      end
+
+      item.likes.each do |like|
+        lid = "#{item.id}_like_#{like.from.id}"
+        check_duplication lid do
+          unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
+            notice like.to_s(:color => @session.options.color), :from => like.from.nick
+          end
+        end
+      end if item.from.id == @session.me['id']
     end
 
     def process_command(message)
@@ -244,14 +235,6 @@ module FacebookIrcGateway
 
     def error_messages(e)
       @server.error_messages e
-    end
-    
-    def error_notice(e)
-      @server.error_notice e
-    end
-
-    def get_error_body(e)
-      @server.get_error_body e
     end
   end
 
