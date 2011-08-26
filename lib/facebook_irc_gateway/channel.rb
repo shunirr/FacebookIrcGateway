@@ -1,4 +1,7 @@
 # coding: utf-8
+
+require 'pp'
+
 module FacebookIrcGateway
   class Channel
 
@@ -117,11 +120,20 @@ module FacebookIrcGateway
 
     def update(message)
       @session.defer do
-        status = @object.feed(:create, :message => message)
-        @session.history << {:id => status['id'], :type => :status, :message => message} if status
-        notice '遅延キューが実行されました'
+        status = nil
+        begin
+          status = @object.feed(:create, :message => message)
+          @session.history << {:id => status['id'], :type => :status, :message => message} if status
+        rescue OAuth2::HTTPError => e
+          message = get_error_body e
+          notice message if message
+        rescue => e
+          error_messages(e)
+          notice 'Failed to update message'
+        end
+        # notice '遅延キューが実行されました'
       end
-      notice '遅延キューに登録しました'
+      # notice '遅延キューに登録しました'
     end
 
     private
@@ -190,6 +202,9 @@ module FacebookIrcGateway
           end
         end if item.from.id == @session.me['id']
 
+      rescue OAuth2::HTTPError => e
+        message = get_error_body e
+        notice message if message
       rescue Exception => e
         error_messages(e)
       end
@@ -233,6 +248,10 @@ module FacebookIrcGateway
     
     def error_notice(e)
       @server.error_notice e
+    end
+
+    def get_error_body(e)
+      @server.get_error_body e
     end
   end
 

@@ -192,6 +192,13 @@ module FacebookIrcGateway
         post server_name, NOTICE, main_channel, I18n.t('error.socket')
       end
     end
+
+    def get_error_body(e)
+      env = e.response.env if e and e.response and e.response.env
+      env_body = JSON.parse(env[:body]) if env
+      err_mes = env_body['error']['message'] if env_body and env_body['error'] and env_body['error']['message']
+      err_mes
+    end
   end
 end
 
