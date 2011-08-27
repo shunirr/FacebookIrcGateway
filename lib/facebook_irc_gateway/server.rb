@@ -173,7 +173,7 @@ module FacebookIrcGateway
     end
 
     def error_messages(e)
-      post server_name, NOTICE, main_channel, Utils.exception_to_messag(e)
+      post server_name, NOTICE, main_channel, Utils.exception_to_message(e)
 
       @log.error e.inspect
       e.backtrace.each do |l|

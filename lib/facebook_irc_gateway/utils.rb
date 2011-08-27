@@ -37,7 +37,7 @@ module FacebookIrcGateway
       case e
       when OAuth2::HTTPError
         if e.response and e.response.env and e.response.env.key? :body
-          body = JSON.parse(e.response.env[:body])
+          body = JSON.parse(e.response.env[:body]) rescue nil
           if body and body.key? 'error'
             error = body['error']
             if error
