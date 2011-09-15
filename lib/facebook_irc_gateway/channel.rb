@@ -141,7 +141,7 @@ module FacebookIrcGateway
 
     def async(options = {})
       count = options[:count]
-      interval = options[:interval] || 30
+      interval = default_interval = options[:interval] || 30
 
       # 初回は即時実行させるために nil を指定する
       timer = EventMachine.add_periodic_timer nil do
@@ -151,7 +151,9 @@ module FacebookIrcGateway
 
         begin
           yield
+          interval = default_interval
         rescue Exception => e
+          interval *= 2
           send_error_message e
         end
       end
