@@ -31,7 +31,7 @@ module FacebookIrcGateway
 
     # IRC methods {{{1
     def send_irc_command(command, options = {})
-      from = (options[:from] || @server.server_name).gsub(/\s+/, '')
+      from = Utils.sanitize_name(options[:from] || @server.server_name)
       channel = options[:channel] || @name
       params = options[:params] || []
       @server.post from, command, channel, *params

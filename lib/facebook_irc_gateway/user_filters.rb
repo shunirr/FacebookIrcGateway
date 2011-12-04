@@ -10,10 +10,10 @@ module FacebookIrcGateway
     def get_name(options={})
       if options[:data]
         id   = options[:data]['id']
-        name = options[:data]['name'].gsub(/\s+/, '')
+        name = Utils.sanitize_name(options[:data]['name'])
       else
         id   = options[:id]
-        name = options[:name].gsub(/\s+/, '')
+        name = Utils.sanitize_name(options[:name])
       end
 
       if record = @filter.find_by_object_id( id ) and record.alias != nil
@@ -24,7 +24,7 @@ module FacebookIrcGateway
 
     def set_name(options={})
       id   = options[:id]
-      name = options[:name].gsub(/\s+/, '')
+      name = Utils.sanitize_name(options[:name])
 
       record = @filter.find_or_initialize_by_object_id( id )
       record.alias = name

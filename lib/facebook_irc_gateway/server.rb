@@ -59,7 +59,7 @@ module FacebookIrcGateway
         me = @client.me.info
         @me.id   = me['id']
         # TODO:aliasを適用する
-        @me.name = me['name'].gsub(/\s+/, '')
+        @me.name = Utils.sanitize_name(me['name'])
 
         @log.debug "id: #{@me.id}, name: #{@me.name}"
       rescue Exception => e
@@ -147,7 +147,7 @@ module FacebookIrcGateway
       @client.me.friends['data'].each do |i|
         id   = i['id']
         # TODO:aliasを適用する
-        name = i['name'].gsub(/\s+/, '')
+        name = Utils.sanitize_name(i['name'])
         friends << {:id => id, :name => name}
       end
 

@@ -7,6 +7,11 @@ Net::HTTP.version_1_2
 
 module FacebookIrcGateway
   class Utils
+
+    def self.sanitize_name(name)
+      name.gsub(/\s+/, '')
+    end
+
     def self.shorten_url(url)
       return url if url.size < 20
       json = JSON.parse(request_short_url(url))
