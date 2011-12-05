@@ -9,7 +9,7 @@ module FacebookIrcGateway
   class Utils
 
     def self.sanitize_name(name)
-      name.gsub(/\s+/, '')
+      name.gsub(/\s/, "\u00A0")
     end
 
     def self.shorten_url(url)
