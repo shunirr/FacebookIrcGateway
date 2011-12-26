@@ -40,7 +40,7 @@ module FacebookIrcGateway
 
     def self.exception_to_message(e)
       case e
-      when OAuth2::HTTPError
+      when OAuth2::Error
         if e.response and e.response.env and e.response.env.key? :body
           body = JSON.parse(e.response.env[:body]) rescue nil
           if body and body.key? 'error'
