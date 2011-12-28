@@ -41,16 +41,11 @@ module FacebookIrcGateway
     def self.exception_to_message(e)
       case e
       when OAuth2::Error
-        if e.response and e.response.env and e.response.env.key? :body
-          body = JSON.parse(e.response.env[:body]) rescue nil
-          if body and body.key? 'error'
-            error = body['error']
-            if error
-              return error['message'] if error['message']
-            end
-          end
+        if e.response.parsed.is_a?(Hash)
+          json = JSON.parse(e.response.body) rescue nil
+          message = ['error', 'message'].inject(json) { |d, k| d.is_a?(Hash) ? d[k] : nil }
+          return message ? message : I18n.t('error.oauth2_http')
         end
-        return I18n.t('error.oauth2_http')
       else
         return e.to_s
       end
