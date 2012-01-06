@@ -18,7 +18,7 @@ First of All, need to setup environments.
 
 This Application require
 
-- Ruby 1.8.7 or higher(Testing on 1.9.2 and 1.8.7)
+- Ruby 1.9.2 or higher (Unsupport Ruby 1.8.x)
 - Bundler gem
 
     gem install bundler
@@ -69,7 +69,7 @@ IRC サーバーのふりをする Facebook クライアントです
 ## セットアップ
 以下のソフトウェアに依存しています
 
-- Ruby 1.8.7 以上(それ以下でも動くかもしれません、 1.9.2 と 1.8.7 で開発しています)
+- Ruby 1.9.2 以上 (1.8.x はサポートしません)
 - Bundler gem
 
     gem install bundler
@@ -94,4 +94,7 @@ Have A FUN!!
 ## 更に詳しく知りたい
 
 https://github.com/shunirr/FacebookIrcGateway/wiki/Home_ja
+
+
+
 

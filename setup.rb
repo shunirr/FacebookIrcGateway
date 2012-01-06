@@ -64,7 +64,7 @@ puts "---"
 puts "#{FacebookIrcGateway::Utils.shorten_url auth_url}"
 puts "---"
 print I18n.t('setup.access_to')
-code = gets.chomp.split("code=").last
+code = gets.chomp.split("code=").last.split("#").first
 
 Pit.set("facebook_irc_gateway", :data => {
   'id' => config['app']['id'],

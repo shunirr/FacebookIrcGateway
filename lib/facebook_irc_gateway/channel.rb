@@ -1,4 +1,5 @@
 # coding: utf-8
+
 module FacebookIrcGateway
   class Channel
 
@@ -30,7 +31,7 @@ module FacebookIrcGateway
 
     # IRC methods {{{1
     def send_irc_command(command, options = {})
-      from = (options[:from] || @server.server_name).gsub(/\s+/, '')
+      from = Utils.sanitize_name(options[:from] || @server.server_name)
       channel = options[:channel] || @name
       params = options[:params] || []
       @server.post from, command, channel, *params
@@ -98,16 +99,15 @@ module FacebookIrcGateway
       notice "start: #{object_name @object.info} (#{@oid})"
 
       stop
-      @check_feed_thread = async do
+      @check_feed_timer = async do
         check_feed
       end
     end
 
     def stop
-      if @check_feed_thread
-        @check_feed_thread.exit
-        @check_feed_thread.join
-        @check_feed_thread = nil
+      if @check_feed_timer
+        @check_feed_timer.cancel
+        @check_feed_timer = nil
       end
     end
 
@@ -116,34 +116,50 @@ module FacebookIrcGateway
     end
 
     def update(message)
-      status = @object.feed(:create, :message => message)
-      @session.history << {:id => status['id'], :type => :status, :message => message} if status
+      @session.defer do
+        begin
+          status = @object.feed(:create, :message => message)
+          @session.history << {:id => status['id'], :type => :status, :message => message} if status
+          #notice '遅延キューが実行されました'
+        rescue Exception => e
+          send_error_message e
+        end
+      end
+      #notice '遅延キューに登録しました'
     end
 
     private
 
-    def async(options = {})
-      @server.log.debug 'begin: async'
-      count = options[:count] || 0
-      interval = options[:interval] || 30
+    def send_error_message(e)
+      # SystemCallError はうざいのでチャンネルに流さない
+      notice Utils.exception_to_message(e) unless e.is_a?(SystemCallError)
 
-      return Thread.start do
-        loop do
-          if count > 0
-            count -= 1
-            break if count == 0
-          end
-
-          begin
-            yield
-          rescue Exception => e
-            error_messages(e)
-          end
-
-          sleep interval
-        end
-        @server.log.debug 'end: async'
+      @server.log.error e.inspect
+      e.backtrace.each do |l|
+        @server.log.error "\t#{l}"
       end
+    end
+
+    def async(options = {})
+      count = options[:count]
+      interval = default_interval = options[:interval] || 30
+
+      # 初回は即時実行させるために nil を指定する
+      timer = EventMachine.add_periodic_timer nil do
+        timer.interval = interval
+        count -= 1 unless count.nil?
+        timer.cancel if count == 0
+
+        begin
+          yield
+          interval = default_interval
+        rescue Exception => e
+          interval *= 2
+          send_error_message e
+        end
+      end
+
+      return timer
     end
 
     def check_duplication(id)
@@ -154,45 +170,38 @@ module FacebookIrcGateway
     end
 
     def check_feed
-      #@server.log.debug 'begin: check_feed'
       feed.reverse.each do |item|
         send_message item
       end
-      #@server.log.debug 'end: check_feed'
     end
 
     def send_message(item, options = {})
-      begin
-        check_duplication item.id do
-          tid = @session.typablemap.push(item)
-          # TODO: auto-liker
-          #@client.status(item.id).likes(:create) if @opts.autoliker == true
-          method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
-        end
-
-        item.comments.each do |comment|
-          check_duplication comment.id do
-            unless @session.user_filter.get_invisible( :type => :comment , :id => comment.parent.from.id )
-              ctid = @session.typablemap.push(comment)
-              method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
-              send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
-            end
-          end
-        end
-
-        item.likes.each do |like|
-          lid = "#{item.id}_like_#{like.from.id}"
-          check_duplication lid do
-            unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
-              notice like.to_s(:color => @session.options.color), :from => like.from.nick
-            end
-          end
-        end if item.from.id == @session.me['id']
-
-      rescue Exception => e
-        error_messages(e)
+      check_duplication item.id do
+        tid = @session.typablemap.push(item)
+        # TODO: auto-liker
+        #@client.status(item.id).likes(:create) if @opts.autoliker == true
+        method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+        send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
       end
+
+      item.comments.each do |comment|
+        check_duplication comment.id do
+          unless @session.user_filter.get_invisible( :type => :comment , :id => comment.parent.from.id )
+            ctid = @session.typablemap.push(comment)
+            method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
+            send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
+          end
+        end
+      end
+
+      item.likes.each do |like|
+        lid = "#{item.id}_like_#{like.from.id}"
+        check_duplication lid do
+          unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
+            notice like.to_s(:color => @session.options.color), :from => like.from.nick
+          end
+        end
+      end if item.from.id == @session.me['id']
     end
 
     def process_command(message)
@@ -229,10 +238,6 @@ module FacebookIrcGateway
 
     def error_messages(e)
       @server.error_messages e
-    end
-    
-    def error_notice(e)
-      @server.error_notice e
     end
   end
 

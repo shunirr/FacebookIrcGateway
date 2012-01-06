@@ -84,8 +84,13 @@ module FacebookIrcGateway
           object = object.parent
         end
 
-        res = session.api.status(object.id).comments(:create, :message => args)
-        session.history << {:id => res['id'], :type => :status, :message => args} if res
+        session.defer do
+          res = session.api.status(object.id).comments(:create, :message => args)
+          session.history << {:id => res['id'], :type => :status, :message => args} if res
+        end
+
+        # とりあえず
+        channel.notice "#{args} >> #{object.from.nick}: #{object.message}"
       end
 
       register [:like, :fav, :arr] do |options|
@@ -97,21 +102,27 @@ module FacebookIrcGateway
 
       register :undo, :tid => false do |options|
         session, channel = options.values_at(:session, :channel)
-        latest = session.history.pop
+        latest = session.deferred_queue.pop
         if latest
-          case latest[:type]
-          when :status
-            delete_at = latest[:id]
-            message = I18n.t('server.delete')
-          when :like
-            delete_at = "#{latest[:id]}/likes"
-            message = I18n.t('server.unlike')
-          else
-            raise ArgumentError, 'Invalid history type'
-          end
+          latest.fail
+          channel.notice "遅延キューの実行をキャンセルしました"
+        else
+          latest = session.history.pop
+          if latest
+            case latest[:type]
+            when :status
+              delete_at = latest[:id]
+              message = I18n.t('server.delete')
+            when :like
+              delete_at = "#{latest[:id]}/likes"
+              message = I18n.t('server.unlike')
+            else
+              raise ArgumentError, 'Invalid history type'
+            end
 
-          session.api.send(:_delete, delete_at)
-          channel.notice "#{message} #{latest[:message]}"
+            session.api.send(:_delete, delete_at)
+            channel.notice "#{message} #{latest[:message]}"
+          end
         end
       end
 

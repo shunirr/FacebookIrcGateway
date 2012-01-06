@@ -2,10 +2,16 @@
 
 require 'net/https'
 require 'json'
+require 'pp'
 Net::HTTP.version_1_2
 
 module FacebookIrcGateway
   class Utils
+
+    def self.sanitize_name(name)
+      name.gsub(/\s/, "\u00A0")
+    end
+
     def self.shorten_url(url)
       return url if url.size < 20
       json = JSON.parse(request_short_url(url))
@@ -29,6 +35,19 @@ module FacebookIrcGateway
           puts e.inspect
           url
         end
+      end
+    end
+
+    def self.exception_to_message(e)
+      case e
+      when OAuth2::Error
+        if e.response.parsed.is_a?(Hash)
+          json = JSON.parse(e.response.body) rescue nil
+          message = ['error', 'message'].inject(json) { |d, k| d.is_a?(Hash) ? d[k] : nil }
+          return message ? message : I18n.t('error.oauth2_http')
+        end
+      else
+        return e.to_s
       end
     end
 

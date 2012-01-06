@@ -22,7 +22,7 @@ module FacebookIrcGateway
     end
   
     def server_version
-      '0.0.1'
+      '0.5.0'
     end
   
     def main_channel
@@ -59,7 +59,7 @@ module FacebookIrcGateway
         me = @client.me.info
         @me.id   = me['id']
         # TODO:aliasを適用する
-        @me.name = me['name'].gsub(/\s+/, '')
+        @me.name = Utils.sanitize_name(me['name'])
 
         @log.debug "id: #{@me.id}, name: #{@me.name}"
       rescue Exception => e
@@ -81,6 +81,7 @@ module FacebookIrcGateway
     end
 
     def on_message(m)
+      return if not ''.respond_to? :force_encoding
       enc = 'UTF-8'
       m.prefix.force_encoding(enc)
       m.command.force_encoding(enc)
@@ -100,7 +101,7 @@ module FacebookIrcGateway
     def on_privmsg(m)
       name, message = m.params
       session = find_session m
-      Thread.start do
+      EventMachine.defer do
         begin
           session.on_privmsg name, message
         rescue Exception => e
@@ -149,7 +150,7 @@ module FacebookIrcGateway
       @client.me.friends['data'].each do |i|
         id   = i['id']
         # TODO:aliasを適用する
-        name = i['name'].gsub(/\s+/, '')
+        name = Utils.sanitize_name(i['name'])
         friends << {:id => id, :name => name}
       end
 
@@ -173,25 +174,13 @@ module FacebookIrcGateway
         @friends = friends
       end
     end
-    
+
     def error_messages(e)
-      error_notice(e)
+      post server_name, NOTICE, main_channel, Utils.exception_to_message(e)
+
       @log.error e.inspect
       e.backtrace.each do |l|
         @log.error "\t#{l}"
-      end
-    end
-    
-    def error_notice(e)
-      case e
-      when OAuth2::HTTPError
-        post server_name, NOTICE, main_channel, I18n.t('error.oauth2_http')
-      when NoMethodError
-        if e.to_s =~ /undefined\smethod\s.me.\sfor\snil:NilClass/
-          post server_name, NOTICE, main_channel, I18n.t('error.no_method_me')
-        end
-      when SocketError
-        post server_name, NOTICE, main_channel, I18n.t('error.socket')
       end
     end
   end
