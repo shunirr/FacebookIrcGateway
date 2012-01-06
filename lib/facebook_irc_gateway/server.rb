@@ -68,7 +68,10 @@ module FacebookIrcGateway
 
       ActiveRecord::Base.establish_connection(
         :adapter  => @opts.db['adapter'],
-        :database => @opts.db['database']
+        :database => @opts.db['database'],
+        :password=> @opts.db['password'],
+        :username=> @opts.db['username'],
+        :socket => @opts.db['socket']
       )
 
       @sessions = {}

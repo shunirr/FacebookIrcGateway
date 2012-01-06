@@ -7,8 +7,9 @@ gem "net-irc", "=0.0.9"
 gem "pit", "=0.0.6"
 gem "ya2yaml", "=0.30"
 gem "sqlite3", "=1.3.3"
-gem "activerecord", "=3.0.7"
-gem "activesupport", "=3.0.7"
+gem 'ruby-mysql'
+gem "activerecord", "=3.0.3"
+gem "activesupport", "=3.0.3"
 gem "i18n", "=0.5.0"
 gem "rake", "=0.8.7"
 

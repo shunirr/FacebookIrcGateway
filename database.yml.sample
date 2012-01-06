@@ -1,0 +1,7 @@
+adapter: mysql
+socket: /var/lib/mysql/mysql.sock
+database: fig
+host: localhost
+username: fig
+password: xxxxxxx
+encoding: utf8
