@@ -46,9 +46,9 @@ module FacebookIrcGateway
           message = ['error', 'message'].inject(json) { |d, k| d.is_a?(Hash) ? d[k] : nil }
           return message ? message : I18n.t('error.oauth2_http')
         end
-      else
-        return e.to_s
       end
+
+      e.to_s
     end
 
     private
