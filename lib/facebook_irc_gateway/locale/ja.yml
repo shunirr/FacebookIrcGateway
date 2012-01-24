@@ -1,8 +1,6 @@
 ja:
   server:
-    alias_0: 'ユーザ名'
-    alias_1: 'を'
-    alias_2: 'にしました'
+    alias: 'ユーザ名%{before}を%{after}にしました'
     invalid_typablemap: 'コマンド実行すると思った？でも残念、さやかちゃんでした！'
     like: 'いいね！'
     unlike: 'よくないね！'
@@ -10,6 +8,12 @@ ja:
     fail_update: '投稿失敗'
     like_mark: '(いいね！)'
     full: '全文'
+    comment_invisible: '%{nick}へのコメントを%{status}にします。'
+    like_invisible: '%{nick}へのいいね！を%{status}にします。'
+    app_filter: '%{nick}からの%{app_name}による投稿を%{status}にします。'
+    app_filter_error: 'webからの発言はフィルタ出来ません。'
+    visible: '表示'
+    invisible: '非表示'
 
   setup:
     app_id: "アプリ ID を入力してください (デフォルト設定を使いたい場合は、そのまま Enter を押してください): "

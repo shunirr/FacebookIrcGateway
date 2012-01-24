@@ -163,7 +163,7 @@ module FacebookIrcGateway
         unless args.nil?
           old_name = session.user_filter.get_name( :id => object.from.id, :name => object.from.nick )
           session.user_filter.set_name( :id => object.from.id ,:name => args )
-          channel.notice "#{I18n.t('server.alias_0')} #{old_name} #{I18n.t('server.alias_1')} #{args} #{I18n.t('server.alias_2')}"
+          channel.notice I18n.t 'server.alias', :before => old_name, :after => args
         end
       end
       
@@ -176,8 +176,7 @@ module FacebookIrcGateway
         val = ! session.user_filter.get_invisible( :type => :comment, :id => object.from.id)
         session.user_filter.set_invisible :type => :comment, :id => object.from.id, :val => val
 
-        # TODO:I18n化
-        channel.notice "#{object.from.nick}へのコメントを#{ val ? '非表示' : '表示' }にします。"
+        channel.notice I18n.t 'server.comment_invisible', :nick => object.from.nick, :status => val ? I18n.t('server.invisible') : I18n.t('server.visible')
       end
 
       # そのユーザーからのlikeを全て非表示にする
@@ -187,8 +186,7 @@ module FacebookIrcGateway
         val = ! session.user_filter.get_invisible( :type => :like, :id => object.from.id)
         session.user_filter.set_invisible :type => :like, :id => object.from.id, :val => val
 
-        # TODO:I18n化
-        channel.notice "#{object.from.nick}からのlikeを#{ val ? '非表示' : '表示' }にします。"
+        channel.notice I18n.t 'server.like_invisible', :nick => object.from.nick, :status => val ? I18n.t('server.invisible') : I18n.t('server.visible')
       end
 
       # tidで指定したstatusのユーザーとアプリケーションの組み合わせをフィルタする
@@ -202,16 +200,13 @@ module FacebookIrcGateway
         if app_id
           if session.user_filter.check_app( :id => object.from.id, :app_id => app_id)
             session.user_filter.remove_app( :id => object.from.id, :app_id => app_id)
-            # TODO:I18n化
-            channel.notice "#{object.from.nick}からの#{object.app_name}による投稿を表示するようにします。"
+            channel.notice I18n.t 'server.app_filter', :nick => object.from.nick, :app_name => object.app_name, :status => I18n.t('server.visible')
           else
             session.user_filter.add_app( :id => object.from.id, :app_id => app_id)
-            # TODO:I18n化
-            channel.notice "#{object.from.nick}からの#{object.app_name}による投稿を非表示にします。"
+            channel.notice I18n.t 'server.app_filter', :nick => object.from.nick, :app_name => object.app_name, :status => I18n.t('server.invisible')
           end
         else
-          # TODO:I18n化
-          channel.notice "webからの発言はフィルタ出来ません。"
+          channel.notice I18n.t 'server.app_filter_error'
         end
       end
 
