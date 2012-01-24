@@ -153,6 +153,11 @@ module FacebookIrcGateway
         channel.notice "#{I18n.t('server.unlike')} #{object.message}"
       end
 
+      register :full do |options|
+        session, channel, object = options.values_at(:session, :channel, :object )
+        channel.notice "#{I18n.t('server.full')} #{object.message}"
+      end
+
       register :alias do |options|
         session, channel, object, args = options.values_at(:session, :channel, :object, :args)
         unless args.nil?
@@ -188,7 +193,26 @@ module FacebookIrcGateway
 
       # tidで指定したstatusのユーザーとアプリケーションの組み合わせをフィルタする
       register [:app_filter,:af] do |options|
+        session, channel, object  = options.values_at(:session, :channel, :object )
+        if object.instance_of? Comment
+          object = object.parent
+        end
 
+        app_id = object.app_id
+        if app_id
+          if session.user_filter.check_app( :id => object.from.id, :app_id => app_id)
+            session.user_filter.remove_app( :id => object.from.id, :app_id => app_id)
+            # TODO:I18n化
+            channel.notice "#{object.from.nick}からの#{object.app_name}による投稿を表示するようにします。"
+          else
+            session.user_filter.add_app( :id => object.from.id, :app_id => app_id)
+            # TODO:I18n化
+            channel.notice "#{object.from.nick}からの#{object.app_name}による投稿を非表示にします。"
+          end
+        else
+          # TODO:I18n化
+          channel.notice "webからの発言はフィルタ出来ません。"
+        end
       end
 
       simple_reply :trp, '（＾－＾）'

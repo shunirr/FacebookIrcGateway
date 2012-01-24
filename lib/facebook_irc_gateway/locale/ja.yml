@@ -9,6 +9,7 @@ ja:
     delete: 'けした→'
     fail_update: '投稿失敗'
     like_mark: '(いいね！)'
+    full: '全文'
 
   setup:
     app_id: "アプリ ID を入力してください (デフォルト設定を使いたい場合は、そのまま Enter を押してください): "

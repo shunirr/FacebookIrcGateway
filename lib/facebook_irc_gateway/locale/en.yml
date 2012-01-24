@@ -9,6 +9,7 @@ en:
     delete: 'delete: '
     fail_update: 'Fail Update...'
     like_mark: '(like)'
+    full: 'full message'
 
   setup:
     app_id: "Input your Application ID: (Press enter, if use default Application ID): "

@@ -177,11 +177,13 @@ module FacebookIrcGateway
 
     def send_message(item, options = {})
       check_duplication item.id do
-        tid = @session.typablemap.push(item)
-        # TODO: auto-liker
-        #@client.status(item.id).likes(:create) if @opts.autoliker == true
-        method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-        send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
+        unless @session.user_filter.check_app( :id => item.from.id, :app_id => item.app_id )
+          tid = @session.typablemap.push(item)
+          # TODO: auto-liker
+          #@client.status(item.id).likes(:create) if @opts.autoliker == true
+          method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
+        end
       end
 
       item.comments.each do |comment|
