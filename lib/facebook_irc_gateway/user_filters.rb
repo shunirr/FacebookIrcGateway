@@ -59,5 +59,41 @@ module FacebookIrcGateway
         record.save
       end
     end
+
+    def check_app(options={})
+      id   = options[:id]
+      app_id   = options[:app_id]
+      unless app_id
+        return false
+      end
+
+      record = @filter.find_by_object_id( id )
+      unless record
+        return false
+      end
+
+      record.filter_app.index( ','+app_id )
+    end
+
+    def add_app(options={})
+      id   = options[:id]
+      app_id   = options[:app_id]
+
+      record = @filter.find_or_initialize_by_object_id( id )
+      record.filter_app = record.filter_app + ','+app_id
+      
+      record.save
+    end
+
+    def remove_app(options={})
+      id   = options[:id]
+      app_id   = options[:app_id]
+
+      record = @filter.find_or_initialize_by_object_id( id )
+      record.filter_app = record.filter_app.delete( ','+app_id )
+      
+      record.save
+    end
+
   end
 end

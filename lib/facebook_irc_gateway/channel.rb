@@ -164,7 +164,7 @@ module FacebookIrcGateway
     end
 
     def check_duplication(id)
-      dup = @duplications.find_or_initialize_by_object_id(id)
+      dup = Duplication.objects(@oid).find_or_initialize_by_object_id(id)
       new = dup.new_record?
       dup.save
       yield if new
@@ -178,11 +178,15 @@ module FacebookIrcGateway
 
     def send_message(item, options = {})
       check_duplication item.id do
-        tid = @session.typablemap.push(item)
-        # TODO: auto-liker
-        #@client.status(item.id).likes(:create) if @opts.autoliker == true
-        method = (item.from.id == @session.me['id']) ? :notice : :privmsg
-        send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
+        unless @session.user_filter.check_app( :id => item.from.id, :app_id => item.app_id )
+          tid = @session.typablemap.push(item)
+          # TODO: auto-liker
+          #@client.status(item.id).likes(:create) if @opts.autoliker == true
+          method = (item.from.id == @session.me['id']) ? :notice : :privmsg
+          send method, item.to_s(:tid => tid, :color => @session.options.color), :from => item.from.nick
+        else
+          @server.log.debug 'app filter:' + item.to_s
+        end
       end
 
       item.comments.each do |comment|
@@ -191,6 +195,8 @@ module FacebookIrcGateway
             ctid = @session.typablemap.push(comment)
             method = (comment.from.id == @session.me['id']) ? :notice : :privmsg
             send method, comment.to_s(:tid => ctid, :color => @session.options.color), :from => comment.from.nick
+          else
+            @server.log.debug 'comment filter:' + comment.to_s
           end
         end
       end
@@ -200,6 +206,8 @@ module FacebookIrcGateway
         check_duplication lid do
           unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
             notice like.to_s(:color => @session.options.color), :from => like.from.nick
+          else
+            @server.log.debug 'like  filter:' + like.to_s
           end
         end
       end if item.from.id == @session.me['id']

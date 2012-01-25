@@ -1,14 +1,19 @@
 en:
   server:
-    alias_0: 'alias'
-    alias_1: 'to'
-    alias_2: ' '
+    alias: 'alias: username "%{before}" to "%{after}"'
     invalid_typablemap: 'Invalid TypableMap'
     like: 'like for'
     unlike: 'unlike for'
     delete: 'delete: '
     fail_update: 'Fail Update...'
     like_mark: '(like)'
+    full: 'full message'
+    comment_invisible: 'to %{status} the %{nick} comment to '
+    like_invisible: 'to %{status} the %{nick} like to '
+    app_filter: '%{status} from the post by %{nick} via %{app_name}'
+    app_filter_error: 'not web app'
+    visible: 'visible'
+    invisible: 'invisible'
 
   setup:
     app_id: "Input your Application ID: (Press enter, if use default Application ID): "

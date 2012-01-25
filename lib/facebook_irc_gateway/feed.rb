@@ -37,7 +37,6 @@ module FacebookIrcGateway
       tokens.join(' ')
     end
     
-    private
     def app_name
       if @application
         return @application['name']
@@ -46,6 +45,15 @@ module FacebookIrcGateway
       end
     end
 
+    def app_id
+      if @application
+        return @application['id']
+      else
+        return nil
+      end
+    end
+
+    private
     def parse(data)
       data.each do |k,v|
         eval("@#{k}=v")

@@ -66,10 +66,7 @@ module FacebookIrcGateway
         error_messages(e)
       end
 
-      ActiveRecord::Base.establish_connection(
-        :adapter  => @opts.db['adapter'],
-        :database => @opts.db['database']
-      )
+      ActiveRecord::Base.establish_connection @opts.db
 
       @sessions = {}
       @posts = []
