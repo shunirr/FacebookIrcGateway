@@ -1,2 +1,11 @@
 adapter: sqlite3
 database: data.sqlite
+
+# mysql
+#adapter: mysql2
+#socket: /var/lib/mysql/mysql.sock
+#database: fig
+#host: localhost
+#username: fig
+#password: xxxxxxx
+#encoding: utf8

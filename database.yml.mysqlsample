@@ -1,7 +1,0 @@
-adapter: mysql2
-socket: /var/lib/mysql/mysql.sock
-database: fig
-host: localhost
-username: fig
-password: xxxxxxx
-encoding: utf8
