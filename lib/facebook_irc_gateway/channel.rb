@@ -95,6 +95,7 @@ module FacebookIrcGateway
     def start(oid)
       @oid = oid
       @object = FacebookOAuth::FacebookObject.new(@oid, @session.api)
+      @duplications = Duplication.objects(oid)
 
       notice "start: #{object_name @object.info} (#{@oid})"
 
