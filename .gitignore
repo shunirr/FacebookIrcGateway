@@ -2,9 +2,8 @@ Gemfile.lock
 .rvmrc
 .bundle
 vendor/bundle
-userlist.yaml
 config.yaml
-database.yaml
+database.yml
 data.sqlite
 *.swp
 *~
