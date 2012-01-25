@@ -40,8 +40,6 @@ module FacebookIrcGateway
       record = @filter.find_by_object_id( id )
       if INVISIBLE_TYPES[ type ] and record
         result = record.send("invisible_#{INVISIBLE_TYPES[type]}")
-      else
-        result = true
       end
       result
     end
