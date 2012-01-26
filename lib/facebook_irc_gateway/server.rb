@@ -71,7 +71,6 @@ module FacebookIrcGateway
       @sessions = {}
       @posts = []
       @channels = {}
-      @duplications = Duplication.objects @me.id
     end
 
     def on_message(m)

@@ -4,7 +4,10 @@ module FacebookIrcGateway
 
     def initialize( uid )
       @user_id = uid
-      @filter = UserFilter.where( :user_id => @user_id )
+    end
+
+    def filter
+      UserFilter.where(:user_id => @user_id)
     end
 
     def get_name(options={})
@@ -16,7 +19,7 @@ module FacebookIrcGateway
         name = Utils.sanitize_name(options[:name])
       end
 
-      if record = @filter.find_by_object_id( id ) and record.alias != nil
+      if record = filter.find_by_object_id( id ) and record.alias != nil
         name = record.alias
       end
       name
@@ -26,7 +29,7 @@ module FacebookIrcGateway
       id   = options[:id]
       name = Utils.sanitize_name(options[:name])
 
-      record = @filter.find_or_initialize_by_object_id( id )
+      record = filter.find_or_initialize_by_object_id( id )
       record.alias = name
 
       record.save
@@ -37,7 +40,7 @@ module FacebookIrcGateway
       type = options[:type]
       result = false
       
-      record = @filter.find_by_object_id( id )
+      record = filter.find_by_object_id( id )
       if INVISIBLE_TYPES[ type ] and record
         result = record.send("invisible_#{INVISIBLE_TYPES[type]}")
       end
@@ -54,7 +57,7 @@ module FacebookIrcGateway
       end
 
       if INVISIBLE_TYPES[ type ]
-        record = @filter.find_or_initialize_by_object_id( id )
+        record = filter.find_or_initialize_by_object_id( id )
         record.send("invisible_#{INVISIBLE_TYPES[type]}=",val)
         record.save
       end
@@ -67,7 +70,7 @@ module FacebookIrcGateway
         return false
       end
 
-      record = @filter.find_by_object_id( id )
+      record = filter.find_by_object_id( id )
       unless record
         return false
       end
@@ -79,7 +82,7 @@ module FacebookIrcGateway
       id   = options[:id]
       app_id   = options[:app_id]
 
-      record = @filter.find_or_initialize_by_object_id( id )
+      record = filter.find_or_initialize_by_object_id( id )
       record.filter_app = record.filter_app + ','+app_id
       
       record.save
@@ -89,7 +92,7 @@ module FacebookIrcGateway
       id   = options[:id]
       app_id   = options[:app_id]
 
-      record = @filter.find_or_initialize_by_object_id( id )
+      record = filter.find_or_initialize_by_object_id( id )
       record.filter_app = record.filter_app.delete( ','+app_id )
       
       record.save

@@ -95,7 +95,6 @@ module FacebookIrcGateway
     def start(oid)
       @oid = oid
       @object = FacebookOAuth::FacebookObject.new(@oid, @session.api)
-      @duplications = Duplication.objects(oid)
 
       notice "start: #{object_name @object.info} (#{@oid})"
 
@@ -163,8 +162,12 @@ module FacebookIrcGateway
       return timer
     end
 
+    def duplications
+      Duplication.objects(@oid)
+    end
+
     def check_duplication(id)
-      dup = @duplications.find_or_initialize_by_object_id(id)
+      dup = duplications.find_or_initialize_by_object_id(id)
       new = dup.new_record?
       dup.save
       yield if new
