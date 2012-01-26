@@ -59,7 +59,7 @@ module FacebookIrcGateway
         eval("@#{k}=v")
       end
       @from = User.new(@from['id'], @from['name'],@filter) if @from
-      @to = @to['data'].map{|m| User.new(m['id'], m['name'],@filter)}if @to && @to['data']
+      @to = @to['data'].map{ |m| User.new(m['id'], m['name'],@filter) }if @to && @to['data'] && @to['data'].size>0
       @type = @type.to_sym if @type
 
       comments = []
