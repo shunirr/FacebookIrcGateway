@@ -30,7 +30,7 @@ module FacebookIrcGateway
       @color = options[:color] || {}
 
       tokens = message_build
-      tokens << " >> #{@to.map(&:name).uniq.join(' ')}".irc_colorize(:color => @color[:parent_message]) if @to
+      tokens << " >> #{@to.map(&:name).uniq.join(' ')}".irc_colorize(:color => @color[:parent_message]) if !@to.nil? && !@to.empty?
       tokens << "(#{options[:tid]})".irc_colorize(:color => @color[:tid]) if options[:tid]
       tokens << "(via #{app_name})".irc_colorize(:color => @color[:app_name])
 
