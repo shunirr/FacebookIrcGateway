@@ -79,7 +79,11 @@ opts[:logger].level  = Logger::DEBUG
 
 system('rake db:migrate')
 
-Thread.start { Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts).start }
+Thread.start do
+  server = Net::IRC::Server.new(opts[:host], opts[:port], FacebookIrcGateway::Server, opts)
+  server.start
+end
+
 EventMachine.threadpool_size = 3
 EventMachine.run
 
