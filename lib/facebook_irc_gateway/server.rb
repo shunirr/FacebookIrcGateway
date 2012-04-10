@@ -1,11 +1,4 @@
 # coding: utf-8
-require 'rubygems'
-require 'uri'
-require 'oauth'
-require 'openssl'
-require 'open-uri'
-require 'yaml'
-require 'i18n'
 
 #書き換えるために無理やり
 module OpenSSL::SSL; remove_const :VERIFY_PEER; VERIFY_PEER = VERIFY_NONE; end
