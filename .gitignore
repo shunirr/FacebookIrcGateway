@@ -2,6 +2,7 @@ Gemfile.lock
 .rvmrc
 .bundle
 vendor/bundle
+vendor/binstubs
 config.yaml
 database.yml
 data.sqlite
