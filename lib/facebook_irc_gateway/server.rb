@@ -23,7 +23,7 @@ module FacebookIrcGateway
     end
   
     def server_version
-      '0.5.0'
+      FacebookIrcGateway::VERSION
     end
   
     def main_channel
@@ -32,29 +32,20 @@ module FacebookIrcGateway
     
     def initialize(server, socket, logger, opts={})
       super
-
-      begin
-        @log.debug @opts.callback
-        
-        I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
-        I18n.default_locale = @opts.locale
-        
-        agent = FacebookOAuth::Client.new(
-          :application_id     => @opts.app_id,
-          :application_secret => @opts.app_secret,
-          :callback           => @opts.callback
-        )
-      rescue Exception => e
-        error_messages(e)
-      end
   
       @me = OpenStruct.new
+      @sessions = {}
+      @posts = []
+      @channels = {}
+
       begin
-        @access_token = agent.authorize(:code => @opts.code)
+        I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
+        I18n.default_locale = @opts.locale
+
         @client = FacebookOAuth::Client.new(
           :application_id     => @opts.app_id,
           :application_secret => @opts.app_secret,
-          :token              => @access_token.token
+          :token              => @opts.access_token
         )
   
         me = @client.me.info
@@ -65,13 +56,15 @@ module FacebookIrcGateway
         @log.debug "id: #{@me.id}, name: #{@me.name}"
       rescue Exception => e
         error_messages(e)
+        shutdown
       end
 
       ActiveRecord::Base.establish_connection @opts.db
+    end
 
-      @sessions = {}
-      @posts = []
-      @channels = {}
+    def shutdown
+      EventMachine.stop
+      Thread.exit
     end
 
     def on_message(m)

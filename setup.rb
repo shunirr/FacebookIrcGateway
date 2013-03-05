@@ -1,11 +1,21 @@
 #!/usr/bin/env ruby
-
-$LOAD_PATH << (RUBY_VERSION > '1.9' ? './lib' : 'lib')
+$:.unshift './lib', './'
 require 'rubygems'
 require 'bundler'
 Bundler.require
-
 require 'facebook_irc_gateway/utils'
+
+class FacebookOAuth::Client
+  # XXX: Fuck'in method
+  def authorize_url(options = {})
+    default_options = {
+      :client_id => @application_id,
+      :redirect_uri => @callback,
+      :scope => 'offline_access,publish_stream',
+    }
+    client.auth_code.authorize_url default_options.merge(options)
+  end
+end
 
 DEFAULT_APP_ID = '221646024527845'
 DEFAULT_APP_SECRET = '012749b22fcc3111ea88760c209cdb27'
@@ -33,44 +43,38 @@ begin
 rescue Exception => e
   config_yaml = {'locale' => 'en'}
 end
-I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
+I18n.load_path += Dir['lib/facebook_irc_gateway/locale/*.yml']
 I18n.default_locale = config_yaml['locale'].to_sym
 
-config = {'app' => {}}
+app_id = DEFAULT_APP_ID
+app_secret = DEFAULT_APP_SECRET
 
 print I18n.t('setup.app_id')
-app_id = gets.chomp
-if app_id == ''
-  config['app']['id']     = DEFAULT_APP_ID
-  config['app']['secret'] = DEFAULT_APP_SECRET
-else
-  config['app']['id'] = app_id
-end
-
-unless config['app']['secret']
+if (id = gets.chomp) != ''
   print I18n.t('setup.app_secret')
-  config['app']['secret'] = gets.chomp
+  if (secret = gets.chomp) != ''
+    app_id = id
+    app_secret = secret
+  end
 end
 
-config['app']['callback'] = 'https://www.facebook.com/connect/login_success.html'
-client = FacebookOAuth::Client.new(
-    :application_id     => config['app']['id'],
-    :application_secret => config['app']['secret'],
-    :callback           => config['app']['callback']
-)
+client = FacebookOAuth::Client.new(:application_id => app_id,
+                                   :application_secret => app_secret,
+                                   :callback => 'https://www.facebook.com/connect/login_success.html')
 
-auth_url = client.authorize_url :scope => PERMISSIONS.join(',')
-puts "---"
+auth_url = client.authorize_url :response_type => 'token', :scope => PERMISSIONS.join(',')
+
+puts '--------------------'
 puts "#{FacebookIrcGateway::Utils.shorten_url auth_url}"
-puts "---"
-print I18n.t('setup.access_to')
-code = gets.chomp.split("code=").last.split("#").first
+puts '--------------------'
 
-Pit.set("facebook_irc_gateway", :data => {
-  'id' => config['app']['id'],
-  'secret' => config['app']['secret'],
-  'callback' => config['app']['callback'],
-  'code' => code
+print I18n.t('setup.access_to')
+access_token = /access_token=(\w+)/.match(gets)[1]
+
+Pit.set('facebook_irc_gateway', :data => {
+  'id' => app_id,
+  'secret' => app_secret,
+  'token' => access_token
 })
 
 puts I18n.t('setup.complete')
