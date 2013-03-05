@@ -167,7 +167,7 @@ module FacebookIrcGateway
     end
 
     def check_duplication(id)
-      dup = duplications.find_or_initialize_by_object_id(id)
+      dup = duplications.find_or_initialize_by_obj_id(id)
       new = dup.new_record?
       dup.save
       yield if new
