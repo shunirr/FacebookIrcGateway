@@ -1,5 +1,5 @@
 adapter: sqlite3
-database: data.sqlite
+database: db/data.sqlite
 
 # mysql
 #adapter: mysql2
