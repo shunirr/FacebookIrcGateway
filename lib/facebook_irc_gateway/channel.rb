@@ -132,7 +132,10 @@ module FacebookIrcGateway
 
     def send_error_message(e)
       # SystemCallError はうざいのでチャンネルに流さない
-      notice Utils.exception_to_message(e) unless e.is_a?(SystemCallError)
+      unless e.is_a?(SystemCallError)
+        str = Utils.exception_to_message(e)
+        notice str unless str =~ /!DOCTYPE/
+      end
 
       @server.log.error e.inspect
       e.backtrace.each do |l|
