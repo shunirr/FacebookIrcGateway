@@ -120,19 +120,21 @@ module FacebookIrcGateway
         begin
           status = @object.feed(:create, :message => message)
           @session.history << {:id => status['id'], :type => :status, :message => message} if status
-          #notice '遅延キューが実行されました'
-        rescue Exception => e
+        rescue => e
           send_error_message e
         end
       end
-      #notice '遅延キューに登録しました'
     end
 
     private
 
+    UNWATCHED_ERRORS = [
+      SystemCallError,
+      Faraday::Error::ClientError
+    ]
+
     def send_error_message(e)
-      # SystemCallError はうざいのでチャンネルに流さない
-      unless e.is_a?(SystemCallError)
+      unless UNWATCHED_ERRORS.any? { |klass| e.is_a?(klass) }
         str = Utils.exception_to_message(e)
         notice str unless str =~ /!DOCTYPE/
       end
@@ -156,7 +158,7 @@ module FacebookIrcGateway
         begin
           yield
           interval = default_interval
-        rescue Exception => e
+        rescue => e
           interval *= 2
           send_error_message e
         end
