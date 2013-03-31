@@ -1,7 +1,6 @@
 # coding: utf-8
 
 require 'net/https'
-require 'json'
 require 'pp'
 Net::HTTP.version_1_2
 
@@ -31,9 +30,9 @@ module FacebookIrcGateway
         data = nil
         http.start do |conn|
           header = {'Content-Type' => 'application/json'}
-          body = {'longUrl' => url}.to_json
+          body = MultiJson.dump({'longUrl' => url})
           res = conn.post uri.path, body, header
-          data = JSON.load(res.body)
+          data = MultiJson.load(res.body)
         end
         data['id']
       rescue => e
