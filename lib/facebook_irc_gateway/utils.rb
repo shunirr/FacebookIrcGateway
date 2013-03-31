@@ -7,65 +7,81 @@ Net::HTTP.version_1_2
 
 module FacebookIrcGateway
   class Utils
+    class << self
+      def sanitize_name(name)
+        name.gsub(/\s/, "\u00A0")
+      end
 
-    def self.sanitize_name(name)
-      name.gsub(/\s/, "\u00A0")
-    end
+      def shortener_uri
+        @shortener_uri ||= URI.parse('https://www.googleapis.com/urlshortener/v1/url')
+      end
 
-    def self.shorten_url(url)
-      return url if url.size < 20
-      json = JSON.parse(request_short_url(url))
-      short = json['id']
-      (short && short.size > 14) ? short : url
-    end
+      def require_shorten?(url)
+        url.size >= 20
+      end
 
-    ##
-    # 発言内容の URL を取得して短くする
-    # @param:: +message+ フィード文字列
-    def self.url_filter(message)
-      message.gsub( URI.regexp(["http", "https"]) ) do |url|
-        begin
-          u = URI( url )
-          http = Net::HTTP.new( u.host )
-          response = http.head( u.path )
-          next url unless response.code.to_i == 200
-          next url if response['content-type'][0..4] == "image"
-          shorten_url(url)
-        rescue => e
-          puts e.inspect
-          url
+      def shorten_url(url)
+        return url unless require_shorten?(url)
+
+        uri = shortener_uri
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+        data = nil
+        http.start do |conn|
+          header = {'Content-Type' => 'application/json'}
+          body = {'longUrl' => url}.to_json
+          res = conn.post uri.path, body, header
+          data = JSON.load(res.body)
+        end
+        data['id']
+      rescue => e
+        url
+      end
+
+      ##
+      # 発言内容の URL を取得して短くする
+      # @param:: +str+ フィード文字列
+      def url_filter(message)
+        message.gsub(URI.regexp(['http', 'https'])) do |url|
+          begin
+            next url unless require_shorten?(url)
+
+            uri = URI.parse url
+            http = Net::HTTP.new uri.host, uri.port
+            res = http.head uri.path
+
+            case res.code.to_i
+            when 200
+              next url if res['Content-Type'] =~ %r(^image/)
+            when 301
+              url = res['Location']
+            else
+              next url
+            end
+
+            shorten_url url
+          rescue => e
+            p e
+            url
+          end
         end
       end
-    end
 
-    def self.exception_to_message(e)
-      case e
-      when OAuth2::Error
-        if e.response.parsed.is_a?(Hash)
-          json = JSON.parse(e.response.body) rescue nil
-          message = ['error', 'message'].inject(json) { |d, k| d.is_a?(Hash) ? d[k] : nil }
-          return message ? message : I18n.t('error.oauth2_http')
+      def exception_to_message(e)
+        case e
+        when OAuth2::Error
+          if e.response.parsed.is_a?(Hash)
+            json = JSON.parse(e.response.body) rescue nil
+            message = ['error', 'message'].inject(json) { |d, k| d.is_a?(Hash) ? d[k] : nil }
+            return message ? message : I18n.t('error.oauth2_http')
+          end
         end
-      end
 
-      e.to_s
-    end
-
-    private
-    def self.request_short_url(url)
-      api = URI.parse 'https://www.googleapis.com/urlshortener/v1/url'
-      https = Net::HTTP.new(api.host, api.port)
-      https.use_ssl = true
-      https.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-      https.start do |http|
-        header = {"Content-Type" => "application/json"}
-        body   = {'longUrl' => url}.to_json
-        response = http.post(api.path, body, header)
-        return response.body
+        e.to_s
       end
     end
-
   end
 end
 

@@ -215,7 +215,7 @@ module FacebookIrcGateway
           unless @session.user_filter.get_invisible( :type => :like , :id => like.parent.from.id )
             notice like.to_s(:color => @session.options.color), :from => like.from.nick
           else
-            @server.log.debug 'like  filter:' + like.to_s
+            @server.log.debug 'like filter:' + like.to_s
           end
         end
       end if item.from.id == @session.me['id']
