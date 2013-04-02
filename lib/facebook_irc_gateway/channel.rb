@@ -151,7 +151,7 @@ module FacebookIrcGateway
 
       # 初回は即時実行させるために nil を指定する
       timer = EventMachine.add_periodic_timer nil do
-        timer.interval = interval
+        timer.interval = interval + rand(5) # 適当にバラす
         count -= 1 unless count.nil?
         timer.cancel if count == 0
 
