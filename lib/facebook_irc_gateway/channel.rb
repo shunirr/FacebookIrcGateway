@@ -145,21 +145,36 @@ module FacebookIrcGateway
       end
     end
 
+    DEFAULT_INTERVAL = 60
+
     def async(options = {})
-      count = options[:count]
-      interval = default_interval = options[:interval] || 60
+      count = options[:count] || -1
+      interval = options[:interval] || DEFAULT_INTERVAL
+      initial_interval = interval
+      max_interval = initial_interval * 15
+      broken = false
 
       # 初回は即時実行させるために nil を指定する
       timer = EventMachine.add_periodic_timer nil do
         timer.interval = interval + rand(5) # 適当にバラす
-        count -= 1 unless count.nil?
         timer.cancel if count == 0
+        count -= 1 if count > 0
 
         begin
           yield
-          interval = default_interval
+          interval = initial_interval
+          broken = false
         rescue => e
-          interval = [(interval * 1.5).to_i, 15 * default_interval]
+          interval = (interval * 1.5).to_i
+
+          if interval >= MAX_INTERVAL
+            interval = MAX_INTERVAL
+            unless broken
+              notice I18n.t('error.broken')
+              broken = true
+            end
+          end
+
           send_error_message e
         end
       end

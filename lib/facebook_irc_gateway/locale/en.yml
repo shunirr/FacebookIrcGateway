@@ -26,3 +26,5 @@ en:
     no_method_me: "I cannot correct the certification. Please reboot fig.rb."
     socket: "I cannot be connected to the network. Please confirm environment of the Internet."
     unknown: "An unknown error occurred."
+    broken: "Facebook is broken!"
+
