@@ -159,7 +159,7 @@ module FacebookIrcGateway
           yield
           interval = default_interval
         rescue => e
-          interval *= 2
+          interval = [(interval * 1.5).to_i, 15 * default_interval]
           send_error_message e
         end
       end
