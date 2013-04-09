@@ -25,3 +25,4 @@ en:
     oauth2_http: "The token which you use might be old. Please carry out setup.rb again."
     no_method_me: "I cannot correct the certification. Please reboot fig.rb."
     socket: "I cannot be connected to the network. Please confirm environment of the Internet."
+    unknown: "An unknown error occurred."

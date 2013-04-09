@@ -71,14 +71,13 @@ module FacebookIrcGateway
       def exception_to_message(e)
         case e
         when OAuth2::Error
-          if e.response.parsed.is_a?(Hash)
-            json = JSON.parse(e.response.body) rescue nil
-            message = ['error', 'message'].inject(json) { |d, k| d.is_a?(Hash) ? d[k] : nil }
-            return message ? message : I18n.t('error.oauth2_http')
-          end
+          json = MultiJson.load(e.response.body) rescue {}
+          error = json['error'] || {}
+          msg = error['message'] || error['error_msg']
+          msg ? msg : I18n.t('error.unknown')
+        else
+          e.to_s
         end
-
-        e.to_s
       end
     end
   end
