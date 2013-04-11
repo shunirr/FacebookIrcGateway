@@ -72,9 +72,9 @@ module FacebookIrcGateway
         case e
         when OAuth2::Error
           json = MultiJson.load(e.response.body) rescue {}
-          error = json['error'] || {}
-          msg = error['message'] || error['error_msg']
-          msg ? msg : I18n.t('error.unknown')
+          msg = json['error']['message'] rescue nil
+          msg ||= json['error_msg'] rescue nil
+          msg || I18n.t('error.unknown')
         else
           e.to_s
         end
