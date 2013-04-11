@@ -165,7 +165,7 @@ module FacebookIrcGateway
           interval = initial_interval
           broken = false
         rescue => e
-          interval = (interval * 1.5).to_i
+          interval *= 2
 
           if interval >= max_interval
             interval = max_interval
