@@ -32,19 +32,21 @@ module FacebookIrcGateway
       @color = options[:color] || {}
 
       terms = []
-      append_value terms, @message
-      append_value terms, @story
-      append_value terms, @name
-      append_value terms, @caption
-      append_value terms, @description
-      append_value terms, @link
+      terms << @message
+      terms << @story
+      terms << @name
+      terms << @caption
+      terms << @description
+      terms << @link
+
+      terms.select! { |t| t.is_a?(String) && !t.empty? }
+      terms.map! { |t| apply_filter t }
 
       tokens = []
-      append_value tokens, terms.join(' / ')
-      append_value tokens, ">> #{@to.map(&:name).uniq.join(', ')}".irc_colorize(:color => @color[:parent_message]) if @to && !@to.empty?
-      append_value tokens, "(#{options[:tid]})".irc_colorize(:color => @color[:tid]) if options[:tid]
-      append_value tokens, "(via #{app_name})".irc_colorize(:color => @color[:app_name])
-
+      tokens << terms.join(' / ')
+      tokens << ">> #{@to.map(&:name).uniq.join(', ')}".irc_colorize(:color => @color[:parent_message]) if @to && !@to.empty?
+      tokens << "(#{options[:tid]})".irc_colorize(:color => @color[:tid]) if options[:tid]
+      tokens << "(via #{app_name})".irc_colorize(:color => @color[:app_name])
       tokens.join(' ')
     end
 
@@ -60,10 +62,12 @@ module FacebookIrcGateway
       @likes = @likes['data'].map { |data| Like.new(self, data, @filter) } rescue []
     end
 
-    def append_value(tokens, str, length = 140)
+    def apply_filter(str, options = {})
+      length = options[:length] || 100
       str = str.to_s
-      tokens << Utils.url_filter(str).truncate(length) unless str.empty?
-      tokens
+      str = Utils.url_filter(str)
+      str = str.truncate(length)
+      str
     end
   end
 
@@ -104,10 +108,9 @@ module FacebookIrcGateway
       color = options[:color] || {}
 
       tokens = []
-      append_value tokens, @message
-      append_value tokens, "(#{options[:tid]})".irc_colorize(:color => color[:tid]) if color[:tid]
-      append_value tokens, ">> #{@parent.from.nick}: #{@parent.to_s}".irc_colorize(:color => color[:parent_message]) if color[:tid]
-
+      tokens << apply_filter(@message)
+      tokens << "(#{options[:tid]})".irc_colorize(:color => color[:tid]) if color[:tid]
+      tokens << ">> #{@parent.from.nick}: #{@parent.to_s}".irc_colorize(:color => color[:parent_message]) if color[:tid]
       tokens.join(' ')
     end
   end
