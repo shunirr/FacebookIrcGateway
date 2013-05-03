@@ -120,7 +120,7 @@ module FacebookIrcGateway
         begin
           status = @object.feed(:create, :message => message)
           @session.history << {:id => status['id'], :type => :status, :message => message} if status
-        rescue => e
+        rescue Exception => e
           send_error_message e
         end
       end
@@ -164,7 +164,7 @@ module FacebookIrcGateway
           yield
           interval = initial_interval
           broken = false
-        rescue => e
+        rescue Exception => e
           interval *= 2
 
           if interval >= max_interval
