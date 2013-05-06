@@ -86,7 +86,7 @@ system('rake db:migrate')
 Faraday.default_adapter = :net_http
 EventMachine.threadpool_size = 3
 EventMachine.run do
-  EventMachine.defer do
+  Thread.start do
     server = Net::IRC::Server.new(options[:host], options[:port], FacebookIrcGateway::Server, options)
     server.start
   end
