@@ -76,17 +76,18 @@ end
 symbolize_values options, :locale, :color
 
 options[:db] = YAML.load_file('database.yml')
-options[:logger] = Logger.new($stdout, 'daily').tap do |logger|
+options[:logger] = Logger.new(STDERR, 'daily').tap do |logger|
   logger.level = Logger::DEBUG
+  logger.formatter = Logger::Formatter.new
 end
 
 system('rake db:migrate')
 
-Thread.start do
-  server = Net::IRC::Server.new(options[:host], options[:port], FacebookIrcGateway::Server, options)
-  server.start
-end
-
+Faraday.default_adapter = :net_http
 EventMachine.threadpool_size = 3
-EventMachine.run
-
+EventMachine.run do
+  EventMachine.defer do
+    server = Net::IRC::Server.new(options[:host], options[:port], FacebookIrcGateway::Server, options)
+    server.start
+  end
+end

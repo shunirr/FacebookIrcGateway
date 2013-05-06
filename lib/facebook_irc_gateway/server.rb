@@ -29,10 +29,13 @@ module FacebookIrcGateway
     def main_channel
       '#facebook'
     end
-    
-    def initialize(server, socket, logger, opts={})
-      super
-  
+
+    def shutdown
+      EventMachine.stop
+      Thread.exit
+    end
+
+    def on_connected
       @me = OpenStruct.new
       @sessions = {}
       @posts = []
@@ -47,7 +50,7 @@ module FacebookIrcGateway
           :application_secret => @opts.app_secret,
           :token              => @opts.access_token
         )
-  
+
         me = @client.me.info
         @me.id   = me['id']
         # TODO:aliasを適用する
@@ -60,11 +63,6 @@ module FacebookIrcGateway
       end
 
       ActiveRecord::Base.establish_connection @opts.db
-    end
-
-    def shutdown
-      EventMachine.stop
-      Thread.exit
     end
 
     def on_message(m)
@@ -81,20 +79,18 @@ module FacebookIrcGateway
       @sessions[@me_id] = Session.new self, @client
     end
   
-    def on_disconnected
-      @observer.kill rescue nil
-    end
-  
     def on_privmsg(m)
-      name, message = m.params
-      session = find_session m
       EventMachine.defer do
-        begin
-          session.on_privmsg name, message
-        rescue Exception => e
-          error_messages(e)
+        name, message = m.params
+        session = find_session m
+        if session
+          begin
+            session.on_privmsg name, message
+          rescue Exception => e
+            error_messages(e)
+          end
         end
-      end if session
+      end
     end
   
     def on_ctcp(target, message)
