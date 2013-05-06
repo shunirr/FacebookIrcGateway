@@ -100,7 +100,9 @@ module FacebookIrcGateway
 
       stop
       @check_feed_timer = async do
-        check_feed
+        timeout(30) do
+          check_feed
+        end
       end
     end
 
