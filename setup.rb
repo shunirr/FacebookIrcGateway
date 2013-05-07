@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 $:.unshift './lib', './'
-require 'rubygems'
 require 'bundler'
 Bundler.require
 require 'facebook_irc_gateway/utils'

@@ -1,8 +1,5 @@
 #!/usr/bin/env ruby
 $:.unshift './lib', './'
-$KCODE = 'u' unless defined? ::Encoding
-
-require 'rubygems'
 require 'bundler'
 Bundler.require
 require 'optparse'
