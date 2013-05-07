@@ -67,14 +67,18 @@ puts '--------------------'
 puts "#{FacebookIrcGateway::Utils.shorten_url auth_url}"
 puts '--------------------'
 
-print I18n.t('setup.access_to')
-access_token = /access_token=(\w+)/.match(gets)[1]
+begin
+  print I18n.t('setup.access_to')
+  access_token = /access_token=(\w+)/.match(gets)[1]
 
-Pit.set('facebook_irc_gateway', :data => {
-  'id' => app_id,
-  'secret' => app_secret,
-  'token' => access_token
-})
+  Pit.set('facebook_irc_gateway', :data => {
+    'id' => app_id,
+    'secret' => app_secret,
+    'token' => access_token
+  })
 
-puts I18n.t('setup.complete')
-
+  puts I18n.t('setup.complete')
+rescue => e
+  puts I18n.t('setup.fail')
+  puts e
+end

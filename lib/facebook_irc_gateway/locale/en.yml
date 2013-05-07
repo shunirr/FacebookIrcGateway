@@ -20,6 +20,7 @@ en:
     app_secret: "Input your Application Secret: "
     access_to: "Please access this URL, Allow this Application, and Paste the URL of the page you are redirected to:"
     complete: "Complete Setup!!"
+    fail: "Setup failed."
 
   error:      
     oauth2_http: "The token which you use might be old. Please carry out setup.rb again."
