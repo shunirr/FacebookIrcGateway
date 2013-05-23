@@ -132,7 +132,8 @@ module FacebookIrcGateway
 
     UNWATCHED_ERRORS = [
       SystemCallError,
-      Faraday::Error::ClientError
+      Faraday::Error::ClientError,
+      Timeout::Error
     ]
 
     def send_error_message(e)
