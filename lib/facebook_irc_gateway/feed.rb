@@ -37,6 +37,7 @@ module FacebookIrcGateway
       terms << @name
       terms << @caption
       terms << @description
+      terms << @picture
       terms << @link
 
       terms.select! { |t| t.is_a?(String) && !t.empty? }
