@@ -54,10 +54,6 @@ module FacebookIrcGateway
             case res.code.to_i
             when 200
               next url if res['Content-Type'] =~ %r(^image/)
-            when 301
-              url = res['Location']
-            else
-              next url
             end
 
             shorten_url url
