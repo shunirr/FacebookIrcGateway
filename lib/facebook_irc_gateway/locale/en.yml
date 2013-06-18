@@ -18,7 +18,9 @@ en:
   setup:
     app_id: "Input your Application ID: (Press enter, if use default Application ID): "
     app_secret: "Input your Application Secret: "
-    access_to: "Please access this URL, Allow this Application, and Paste the URL of the page you are redirected to:"
+    email: "Input your mail address: "
+    password: "Input your password: "
+    expires_in: "Access token expires in %{date}"
     complete: "Complete Setup!!"
     fail: "Setup failed."
 
