@@ -20,6 +20,7 @@ en:
     app_secret: "Input your Application Secret: "
     email: "Input your mail address: "
     password: "Input your password: "
+    access_to: "Please access this URL and allow this Application. Retry this after."
     expires_in: "Access token expires in %{date}"
     complete: "Complete Setup!!"
     fail: "Setup failed."

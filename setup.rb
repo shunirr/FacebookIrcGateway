@@ -25,6 +25,7 @@ end
 
 DEFAULT_APP_ID = '221646024527845'
 DEFAULT_APP_SECRET = '012749b22fcc3111ea88760c209cdb27'
+CALLBACK_URL = 'https://www.facebook.com/connect/login_success.html'
 
 PERMISSIONS = [
   'user_about_me', 'friends_about_me', 'user_activities', 'friends_activities', 
@@ -66,7 +67,7 @@ end
 
 client = FacebookOAuth::Client.new(:application_id => app_id,
                                    :application_secret => app_secret,
-                                   :callback => 'https://www.facebook.com/connect/login_success.html')
+                                   :callback => CALLBACK_URL)
 
 auth_url = client.authorize_url :response_type => 'token', :scope => PERMISSIONS.join(',')
 
@@ -81,19 +82,24 @@ begin
       puts ''
 
       success_page = form.submit
-      params = Hash[*success_page.uri.fragment.split('&').map { |s| s.split('=') }.flatten]
+      if success_page.uri.path == URI(CALLBACK_URL).path
+        params = Hash[*success_page.uri.fragment.split('&').map { |s| s.split('=') }.flatten]
 
-      access_token = params['access_token']
-      expires_in = params['expires_in'].to_i
+        access_token = params['access_token']
+        expires_in = params['expires_in'].to_i
 
-      Pit.set('facebook_irc_gateway', :data => {
-        'id' => app_id,
-        'secret' => app_secret,
-        'token' => access_token
-      })
+        Pit.set('facebook_irc_gateway', :data => {
+          'id' => app_id,
+          'secret' => app_secret,
+          'token' => access_token
+        })
 
-      puts I18n.t('setup.complete')
-      puts I18n.t('setup.expires_in', :date => expires_in.seconds.since)
+        puts I18n.t('setup.complete')
+        puts I18n.t('setup.expires_in', :date => expires_in.seconds.since)
+      else
+        puts I18n.t('setup.access_to')
+        puts FacebookIrcGateway::Utils.shorten_url auth_url
+      end
     end
   end
 rescue => e
