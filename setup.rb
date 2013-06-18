@@ -3,6 +3,7 @@ $:.unshift './lib', './'
 require 'bundler'
 Bundler.require
 require 'facebook_irc_gateway/utils'
+require 'active_support/core_ext/numeric/time'
 
 class FacebookOAuth::Client
   # XXX: Fuck'in method
@@ -14,6 +15,12 @@ class FacebookOAuth::Client
     }
     client.auth_code.authorize_url default_options.merge(options)
   end
+end
+
+def noecho
+  `stty -echo`
+  yield
+  `stty echo`
 end
 
 DEFAULT_APP_ID = '221646024527845'
@@ -49,9 +56,9 @@ app_id = DEFAULT_APP_ID
 app_secret = DEFAULT_APP_SECRET
 
 print I18n.t('setup.app_id')
-if (id = gets.chomp) != ''
+if (id = gets.strip) != ''
   print I18n.t('setup.app_secret')
-  if (secret = gets.chomp) != ''
+  if (secret = gets.strip) != ''
     app_id = id
     app_secret = secret
   end
@@ -63,21 +70,32 @@ client = FacebookOAuth::Client.new(:application_id => app_id,
 
 auth_url = client.authorize_url :response_type => 'token', :scope => PERMISSIONS.join(',')
 
-puts '--------------------'
-puts "#{FacebookIrcGateway::Utils.shorten_url auth_url}"
-puts '--------------------'
-
 begin
-  print I18n.t('setup.access_to')
-  access_token = /access_token=(\w+)/.match(gets)[1]
+  agent = Mechanize.new
+  agent.get auth_url do |login_page|
+    login_page.form_with :id => 'login_form' do |form|
+      print I18n.t('setup.email')
+      form.email = gets.strip
+      print I18n.t('setup.password')
+      noecho { form.pass = gets.strip }
+      puts ''
 
-  Pit.set('facebook_irc_gateway', :data => {
-    'id' => app_id,
-    'secret' => app_secret,
-    'token' => access_token
-  })
+      success_page = form.submit
+      params = Hash[*success_page.uri.fragment.split('&').map { |s| s.split('=') }.flatten]
 
-  puts I18n.t('setup.complete')
+      access_token = params['access_token']
+      expires_in = params['expires_in'].to_i
+
+      Pit.set('facebook_irc_gateway', :data => {
+        'id' => app_id,
+        'secret' => app_secret,
+        'token' => access_token
+      })
+
+      puts I18n.t('setup.complete')
+      puts I18n.t('setup.expires_in', :date => expires_in.seconds.since)
+    end
+  end
 rescue => e
   puts I18n.t('setup.fail')
   puts e
