@@ -27,25 +27,23 @@ module FacebookIrcGateway
       join @server.main_channel, :type => NewsFeedChannel, :oid => 'me'
     end
 
-    def defer(options = {}, &block)
-      args = options[:args]
+    def defer(*args, &block)
+      options = args.extract_options!
       delay = options[:delay] || 10
-      errback = options[:errback]
 
       deferrable = EventMachine::DefaultDeferrable.new
-      deferrable.callback do |*args|
-        @deferred_queue.delete_if {|d| d === deferrable}
-        block.call args 
-      end
-      deferrable.errback do |*args|
-        @deferred_queue.delete_if {|d| d === deferrable}
-        errback.call args  if errback
-      end
+      remover = proc { @deferred_queue.delete_if { |d| d === deferrable } }
+      deferrable.callback &remover
+      deferrable.errback &remover
+      deferrable.callback { |*args| block.call(*args) rescue nil }
 
       @deferred_queue.push deferrable
+
       EventMachine.add_timer delay do
-        deferrable.succeed args
+        deferrable.succeed *args
       end
+
+      deferrable
     end
 
     def me(force = false)

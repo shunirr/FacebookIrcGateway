@@ -119,16 +119,12 @@ module FacebookIrcGateway
 
     def update(message)
       @session.defer do
-        begin
+        error_handler do
           status = @object.feed(:create, :message => message)
           @session.history << {:id => status['id'], :type => :status, :message => message} if status
-        rescue Exception => e
-          send_error_message e
         end
       end
     end
-
-    private
 
     UNWATCHED_ERRORS = [
       SystemCallError,
@@ -147,6 +143,16 @@ module FacebookIrcGateway
         @server.log.error "\t#{l}"
       end
     end
+
+    def error_handler
+      begin
+        yield if block_given?
+      rescue Exception => e
+        send_error_message e
+      end
+    end
+
+    private
 
     DEFAULT_INTERVAL = 60
 

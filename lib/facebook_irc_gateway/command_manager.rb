@@ -85,8 +85,10 @@ module FacebookIrcGateway
         end
 
         session.defer do
-          res = session.api.status(object.id).comments(:create, :message => args)
-          session.history << {:id => res['id'], :type => :status, :message => args} if res
+          channel.error_handler do
+            res = session.api.status(object.id).comments(:create, :message => args)
+            session.history << {:id => res['id'], :type => :status, :message => args} if res
+          end
         end
 
         # とりあえず
@@ -104,7 +106,7 @@ module FacebookIrcGateway
         session, channel = options.values_at(:session, :channel)
         latest = session.deferred_queue.pop
         if latest
-          latest.fail
+          latest.fail :cancel
           channel.notice "遅延キューの実行をキャンセルしました"
         else
           latest = session.history.pop
