@@ -1,0 +1,8 @@
+#!/bin/sh
+PID="pidfile"
+if [ -f $PID ]; then
+  kill `cat $PID`
+  rm $PID
+fi
+bundle exec ruby ./fig.rb >log.txt 2>&1 &
+echo $! >$PID
