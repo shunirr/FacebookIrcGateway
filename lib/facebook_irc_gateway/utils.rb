@@ -46,17 +46,11 @@ module FacebookIrcGateway
         message.gsub(URI.regexp(['http', 'https'])) do |url|
           begin
             next url unless require_shorten?(url)
-
-            uri = URI.parse url
-            http = Net::HTTP.new uri.host, uri.port
-            res = http.head uri.path
-
-            case res.code.to_i
-            when 200
-              next url if res['Content-Type'] =~ %r(^image/)
+            if url =~ /\.(jpg|png|gif)$/
+              "#{shorten_url(url)}\#.#{$1}"
+            else
+              shorten_url url
             end
-
-            shorten_url url
           rescue => e
             p e
             url
