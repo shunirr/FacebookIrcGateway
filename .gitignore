@@ -7,4 +7,6 @@ database.yml
 data.sqlite
 *.swp
 *~
-
+log.txt
+pidfile
+run
