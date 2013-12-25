@@ -83,13 +83,14 @@ system('rake db:migrate')
 $locale = options[:locale]
 module FacebookOAuth
   class Client
-    alias :___get__ :_get
-    def _get(url)
+    alias :_get_without_locale :_get
+    def _get_with_locale(url)
       if $locale == :ja
         url = "#{url.to_s}?locale=ja_JP"
       end
-      ___get__(url)
+      _get_without_locale(url)
     end
+    alias :_get :_get_with_locale
   end
 end
 
