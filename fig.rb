@@ -80,6 +80,19 @@ end
 
 system('rake db:migrate')
 
+$locale = options[:locale]
+module FacebookOAuth
+  class Client
+    alias :___get__ :_get
+    def _get(url)
+      if $locale == :ja
+        url = "#{url.to_s}?locale=ja_JP"
+      end
+      ___get__(url)
+    end
+  end
+end
+
 Faraday.default_adapter = :net_http
 EventMachine.threadpool_size = 3
 EventMachine.run do
