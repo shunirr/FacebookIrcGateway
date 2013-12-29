@@ -248,7 +248,7 @@ module FacebookIrcGateway
 
     def build_nick(user)
       if @server.opts.show_userid
-        "#{user.nick} (fb:#{user.id})"
+        "#{user.nick}(fb:#{user.id})"
       else
         user.nick
       end
