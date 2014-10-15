@@ -5,7 +5,7 @@ require 'openssl'
 class OpenSSL::SSL::SSLContext
   if const_defined? :DEFAULT_PARAMS
     const_set(:DEFAULT_PARAMS, remove_const(:DEFAULT_PARAMS).merge({
-      :ssl_version => 'SSLv3',
+      :ssl_version => 'TLSv1',
       :verify_mode => OpenSSL::SSL::VERIFY_NONE,
     }))
   end
