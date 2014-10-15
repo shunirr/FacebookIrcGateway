@@ -2,20 +2,9 @@
 $:.unshift './lib', './'
 require 'bundler'
 Bundler.require
+require 'facebook_irc_gateway/ext'
 require 'facebook_irc_gateway/utils'
 require 'active_support/core_ext/numeric/time'
-
-class FacebookOAuth::Client
-  # XXX: Fuck'in method
-  def authorize_url(options = {})
-    default_options = {
-      :client_id => @application_id,
-      :redirect_uri => @callback,
-      :scope => 'offline_access,publish_stream',
-    }
-    client.auth_code.authorize_url default_options.merge(options)
-  end
-end
 
 def noecho
   `stty -echo`

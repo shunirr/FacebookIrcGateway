@@ -3,6 +3,7 @@ require 'active_record'
 require 'ya2yaml'
 require 'facebook_oauth'
 require 'facebook_irc_gateway/version'
+require 'facebook_irc_gateway/ext'
 require 'facebook_irc_gateway/utils' #TODO: オープンクラスが理由でautoloadできない
 
 module FacebookIrcGateway
