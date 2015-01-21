@@ -1,3 +1,5 @@
+require 'facebook_oauth'
+
 module FacebookOAuth
   class Client
     def authorize_url(options = {})
@@ -21,6 +23,15 @@ module FacebookOAuth
           }
         }
       })
+    end
+
+    %w(_get _post _delete).each do |method|
+      define_method("#{method}_with_version") do |*args|
+        args.unshift File.join('v2.0', args.shift)
+        __send__ "#{method}_without_version", *args
+      end
+      alias_method "#{method}_without_version", method
+      alias_method method, "#{method}_with_version"
     end
   end
 end
