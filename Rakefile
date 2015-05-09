@@ -10,13 +10,13 @@ task :default => :spec
 
 namespace :db do
   task :load_config do
-    ActiveRecord::Base.configurations = YAML.load(File.open('database.yml'))
-    ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations)
+    @config = YAML.load(File.open('database.yml'))
+    ActiveRecord::Base.establish_connection(@config)
   end
 
   desc 'Create the database'
   task :create => :load_config do
-    create_database(ActiveRecord::Base.configurations)
+    create_database(@config)
   end
 
   def create_database(config)
@@ -30,8 +30,7 @@ namespace :db do
   desc 'Drop the database'
   task :drop => :load_config do
     begin
-      config = ActiveRecord::Base.configurations
-      drop_database(config)
+      drop_database(@config)
     rescue Exception => e
       $stderr.puts "Couldn't drop #{config['database']} : #{e.inspect}"
     end

@@ -1,25 +1,24 @@
 
 module FacebookIrcGateway
   class Session
-    attr_reader :server, :api, :command_manager, :user_filter
+    attr_reader :server, :graph, :command_manager, :user_filter
     attr_reader :typablemap, :channels, :options, :history
     attr_reader :deferred_queue
 
-    def initialize(server, api)
+    def initialize(server, graph)
       @server = server
-      @api = api
-      @me = api.me.info
+      @graph = graph
       @channels = {}
       @command_manager = CommandManager.new(self)
       @typablemap = TypableMap.new(50 * 50, true)
-      @user_filter = UserFilters.new(@me['id'])
+      @user_filter = UserFilters.new(me['id'])
       @options = server.opts # とりあえず参照だけでもこっちでもつ
       @history = []
 
       @deferred_queue = []
 
       # join channels
-      Model::Channel.where(:uid => @me['id']).each do |channel|
+      Model::Channel.where(:uid => me['id']).each do |channel|
         join channel.name, :mode => channel.mode, :oid => channel.oid
       end
 
@@ -47,8 +46,8 @@ module FacebookIrcGateway
     end
 
     def me(force = false)
-      @me = @api.me.info if @me.nil? or force
-      return @me
+      @me = @graph.get_object('me') if @me.nil? || force
+      @me
     end
 
     def join(name, options = {})
@@ -58,12 +57,12 @@ module FacebookIrcGateway
       mode = options[:mode] || '+o'
       oid = options[:oid]
 
+      @server.post @server.prefix, 'JOIN', name
+      @server.post @server.server_name, 'MODE', name, mode, @server.prefix.nick
+
       channel = @channels[name] = type.new(@server, self, name, oid)
       channel.on_join
       channel.start oid if oid
-
-      @server.post @server.prefix, 'JOIN', name
-      @server.post @server.server_name, 'MODE', name, mode, @server.prefix.nick
 
       return channel
     end

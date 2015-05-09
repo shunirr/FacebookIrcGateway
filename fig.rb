@@ -5,6 +5,7 @@ Bundler.require
 require 'optparse'
 require 'yaml'
 require 'logger'
+require 'active_support'
 require 'active_support/core_ext'
 require 'facebook_irc_gateway'
 
@@ -81,24 +82,17 @@ end
 system('rake db:migrate')
 
 $locale = options[:locale]
-module FacebookOAuth
-  class Client
-    alias :_get_without_locale :_get
-    def _get_with_locale(url)
-      if $locale == :ja
-        url = "#{url.to_s}?locale=ja_JP"
-      end
-      _get_without_locale(url)
-    end
-    alias :_get :_get_with_locale
-  end
-end
 
 Faraday.default_adapter = :net_http
-EventMachine.threadpool_size = 3
+#EventMachine.threadpool_size = 3
 EventMachine.run do
-  Thread.start do
+  %w(INT TERM).each do |sig|
+    Signal.trap(sig) { EventMachine.stop }
+  end
+
+  Thread.new do
     server = Net::IRC::Server.new(options[:host], options[:port], FacebookIrcGateway::Server, options)
     server.start
   end
 end
+
