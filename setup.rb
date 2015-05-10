@@ -43,6 +43,7 @@ PERMISSIONS = %w(
   user_website
   user_work_history
   read_stream
+  publish_actions
 )
 
 begin
