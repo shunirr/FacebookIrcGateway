@@ -2,7 +2,6 @@
 $:.unshift './lib', './'
 require 'bundler'
 Bundler.require
-require 'facebook_irc_gateway/ext'
 require 'facebook_irc_gateway/utils'
 require 'active_support/core_ext/numeric/time'
 
