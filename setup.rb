@@ -42,6 +42,7 @@ PERMISSIONS = %w(
   user_videos
   user_website
   user_work_history
+  read_stream
 )
 
 begin
