@@ -84,7 +84,7 @@ system('rake db:migrate')
 $locale = options[:locale]
 
 Faraday.default_adapter = :net_http
-#EventMachine.threadpool_size = 3
+EventMachine.threadpool_size = 3
 EventMachine.run do
   %w(INT TERM).each do |sig|
     Signal.trap(sig) { EventMachine.stop }
