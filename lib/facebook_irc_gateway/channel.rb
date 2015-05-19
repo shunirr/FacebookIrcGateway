@@ -18,7 +18,7 @@ module FacebookIrcGateway
       'checkins'
     ]
 
-    attr_reader :server, :session, :name, :mode, :object
+    attr_reader :server, :session, :name, :mode, :oid
 
     def initialize(server, session, name, oid = nil)
       @server = server
@@ -26,7 +26,7 @@ module FacebookIrcGateway
       @name = name
       @mode = nil
       @oid = oid
-      @object = nil
+      @started = false
     end
 
     # IRC methods {{{1
@@ -51,7 +51,7 @@ module FacebookIrcGateway
       # check command
       return if process_command message
       return if @session.command_manager.process self, message
-      if has_object?
+      if started?
         status = update message
       end
     end
@@ -70,7 +70,7 @@ module FacebookIrcGateway
 
     # Record {{{1
     def save
-      Model::Channel.where(:uid => @session.me['id']).find_or_initialize_by_name(@name).update_attributes({
+      Model::Channel.where(:uid => @session.me['id']).find_or_initialize_by(:name => @name).update_attributes({
         :mode => @mode,
         :oid => @oid
       })
@@ -81,8 +81,8 @@ module FacebookIrcGateway
     end
     # }}}1
 
-    def has_object?
-      not @object.nil?
+    def started?
+      @started
     end
 
     def object_name(item)
@@ -94,9 +94,9 @@ module FacebookIrcGateway
 
     def start(oid)
       @oid = oid
-      @object = FacebookOAuth::FacebookObject.new(@oid, @session.api)
 
-      notice "start: #{object_name @object.info} (#{@oid})"
+      info = @session.graph.get_object(@oid)
+      notice "start: #{object_name info} (#{@oid})"
 
       stop
       @check_feed_timer = async do
@@ -104,9 +104,13 @@ module FacebookIrcGateway
           check_feed
         end
       end
+
+      @started = true
     end
 
     def stop
+      @started = false
+
       if @check_feed_timer
         @check_feed_timer.cancel
         @check_feed_timer = nil
@@ -114,13 +118,13 @@ module FacebookIrcGateway
     end
 
     def feed
-      Feed.new(@object.feed, @session.user_filter)
+      Feed.new @session.graph.get_connections(@oid, 'feed'), @session.user_filter
     end
 
     def update(message)
       @session.defer do
         error_handler do
-          status = @object.feed(:create, :message => message)
+          status = @session.graph.put_connections(@oid, 'feed', :message => message)
           @session.history << {:id => status['id'], :type => :status, :message => message} if status
         end
       end
@@ -260,7 +264,7 @@ module FacebookIrcGateway
 
       @server.log.debug "command: #{[command, args].to_s}"
 
-      items = @session.api.me.send(command)['data'].reverse
+      items = @session.graph.get_connections('me', command).reverse
       @server.log.debug "items: #{items.to_s}"
 
       if items.empty?
@@ -300,7 +304,8 @@ module FacebookIrcGateway
     end
 
     def feed
-      Feed.new(@object.home, @session.user_filter)
+      home = @session.graph.get_connections(@oid, 'home')
+      Feed.new(home, @session.user_filter)
     end
   end
 

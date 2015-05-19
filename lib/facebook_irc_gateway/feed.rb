@@ -117,16 +117,14 @@ module FacebookIrcGateway
   end
 
   class Feed < Array
-    def initialize(data, filter)
-      items = data['data'] || []
+    def initialize(items, filter)
       concat items.map { |item| Entry.new(item, filter) }
     end
   end
 
   # TODO: このファイルにあるのはおかしいので後で移動する
   class Friends < Array
-    def initialize(data, filter)
-      items = data['data'] || []
+    def initialize(items, filter)
       concat items.map { |item| User.new(item['id'], item['name'], filter) }
     end
   end

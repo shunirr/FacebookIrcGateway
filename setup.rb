@@ -2,7 +2,6 @@
 $:.unshift './lib', './'
 require 'bundler'
 Bundler.require
-require 'facebook_irc_gateway/ext'
 require 'facebook_irc_gateway/utils'
 require 'active_support/core_ext/numeric/time'
 
@@ -16,23 +15,36 @@ DEFAULT_APP_ID = '221646024527845'
 DEFAULT_APP_SECRET = '012749b22fcc3111ea88760c209cdb27'
 CALLBACK_URL = 'https://www.facebook.com/connect/login_success.html'
 
-PERMISSIONS = [
-  'user_about_me', 'friends_about_me', 'user_activities', 'friends_activities', 
-  'user_birthday', 'friends_birthday', 'user_checkins', 'friends_checkins', 
-  'user_education_history', 'friends_education_history', 'user_events', 'friends_events', 
-  'user_groups', 'friends_groups', 'user_hometown', 'friends_hometown', 
-  'user_interests', 'friends_interests', 'user_likes', 'friends_likes', 
-  'user_location', 'friends_location', 'user_notes', 'friends_notes', 
-  'user_online_presence', 'friends_online_presence', 'user_photo_video_tags', 'friends_photo_video_tags', 
-  'user_photos', 'friends_photos', 'user_relationships', 'friends_relationships', 
-  'user_relationship_details', 'friends_relationship_details', 'user_religion_politics', 'friends_religion_politics', 
-  'user_status', 'friends_status', 'user_videos', 'friends_videos', 
-  'user_website', 'friends_website', 'user_work_history', 'friends_work_history', 
-  'email', 'read_friendlists', 'read_insights', 'read_mailbox', 
-  'read_requests', 'read_stream', 'xmpp_login', 'ads_management', 
-  'publish_stream', 'create_event', 'rsvp_event', 'offline_access',
-  'publish_checkins', 'manage_friendlists', 'manage_pages'
-]
+PERMISSIONS = %w(
+  user_about_me
+  user_actions.books
+  user_actions.fitness
+  user_actions.music
+  user_actions.news
+  user_actions.video
+  user_birthday
+  user_education_history
+  user_events
+  user_friends
+  user_games_activity
+  user_groups
+  user_hometown
+  user_likes
+  user_location
+  user_managed_groups
+  user_photos
+  user_posts
+  user_relationship_details
+  user_relationships
+  user_religion_politics
+  user_status
+  user_tagged_places
+  user_videos
+  user_website
+  user_work_history
+  read_stream
+  publish_actions
+)
 
 begin
   config_yaml = YAML::load_file('config.yaml')
@@ -54,11 +66,8 @@ if (id = gets.strip) != ''
   end
 end
 
-client = FacebookOAuth::Client.new(:application_id => app_id,
-                                   :application_secret => app_secret,
-                                   :callback => CALLBACK_URL)
-
-auth_url = client.authorize_url :response_type => 'token', :scope => PERMISSIONS.join(',')
+oauth = Koala::Facebook::OAuth.new app_id, app_secret, CALLBACK_URL
+auth_url = oauth.url_for_oauth_code :permissions => PERMISSIONS
 
 begin
   agent = Mechanize.new
@@ -72,7 +81,8 @@ begin
 
       success_page = form.submit
       if success_page.uri.path == URI(CALLBACK_URL).path
-        params = Hash[*success_page.uri.fragment.split('&').map { |s| s.split('=') }.flatten]
+        code = Hash[*success_page.uri.query.split('&').map { |s| s.split('=') }.flatten]['code']
+        params = oauth.get_access_token_info code
 
         access_token = params['access_token']
         expires_in = params['expires_in'].to_i

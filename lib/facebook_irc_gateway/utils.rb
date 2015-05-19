@@ -34,7 +34,7 @@ module FacebookIrcGateway
           res = conn.post uri.path, body, header
           data = MultiJson.load(res.body)
         end
-        data['id']
+        data['id'] || url
       rescue => e
         url
       end
@@ -59,15 +59,12 @@ module FacebookIrcGateway
       end
 
       def exception_to_message(e)
-        case e
-        when OAuth2::Error
-          json = MultiJson.load(e.response.body) rescue {}
-          msg = json['error']['message'] rescue nil
-          msg ||= json['error_msg'] rescue nil
-          msg || I18n.t('error.unknown')
-        else
-          e.to_s
-        end
+        json = MultiJson.load(e.response.body) rescue {}
+        msg = json['error']['message'] rescue nil
+        msg ||= json['error_msg'] rescue nil
+        msg || I18n.t('error.unknown')
+      rescue
+        e.to_s
       end
     end
   end

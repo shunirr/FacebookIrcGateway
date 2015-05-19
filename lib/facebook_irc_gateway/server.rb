@@ -34,13 +34,9 @@ module FacebookIrcGateway
         I18n.load_path += Dir["lib/facebook_irc_gateway/locale/*.yml"]
         I18n.default_locale = @opts.locale
 
-        @client = FacebookOAuth::Client.new(
-          :application_id     => @opts.app_id,
-          :application_secret => @opts.app_secret,
-          :token              => @opts.access_token
-        )
+        @graph = Koala::Facebook::API.new @opts.access_token
 
-        me = @client.me.info
+        me = @graph.get_object('me')
         @me.id   = me['id']
         # TODO:aliasを適用する
         @me.name = Utils.sanitize_name(me['name'])
@@ -65,7 +61,7 @@ module FacebookIrcGateway
     def on_user(m)
       super
       @me_id = 'me' # とりあえず固定
-      @sessions[@me_id] = Session.new self, @client
+      @sessions[@me_id] = Session.new self, @graph
     end
   
     def on_privmsg(m)
@@ -119,7 +115,7 @@ module FacebookIrcGateway
       first = true unless @friends
       @friends ||= []
       friends = []
-      @client.me.friends['data'].each do |i|
+      @graph.get_connections('me', 'friends').each do |i|
         id   = i['id']
         # TODO:aliasを適用する
         name = Utils.sanitize_name(i['name'])

@@ -3,7 +3,7 @@ source 'http://rubygems.org'
 gem 'sqlite3'
 #gem 'mysql2'
 
-gem 'facebook_oauth'
+gem 'koala'
 gem 'net-irc'
 gem 'eventmachine'
 gem 'pit'
