@@ -1,5 +1,7 @@
 # Facebook Irc Gateway
 
+Warning: This project does not currently work due to specification change of API on fb side.
+
 Japanese below
 
 ## What's That
